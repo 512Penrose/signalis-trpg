@@ -2585,6 +2585,17 @@ class MainLayout(BoxLayout):
             self.orientation = "horizontal"
             self.spacing = dp(3)
 
+            # Android 系统导航栏适配：底部留出安全区
+            try:
+                from kivy.utils import platform
+                if platform == "android":
+                    self.padding = [0, 0, 0, dp(50)]  # 底部50dp避开导航栏
+                    print("[SIGNALIS] Android bottom padding set")
+                else:
+                    self.padding = [0, 0, 0, 0]
+            except Exception:
+                self.padding = [0, 0, 0, 0]
+
             # 左栏 - 角色管理 (25%)
             print("[SIGNALIS] Building LeftPanel...")
             self.left_panel = LeftPanel(app, size_hint=(0.25, 1))
@@ -2616,8 +2627,70 @@ class SignalisApp(App):
 
     def build(self):
         import traceback
+        import os
         print("[SIGNALIS] build() started")
         try:
+            # ===== 加载中文字体 (覆盖 Kivy 默认 Roboto 字体) =====
+            try:
+                from kivy.core.text import LabelBase
+                # Android 系统字体路径
+                CJK_FONTS = [
+                    "/system/fonts/NotoSansSC-Regular.otf",
+                    "/system/fonts/NotoSansCJKsc-Regular.otf",
+                    "/system/fonts/NotoSansCJK-Regular.ttc",
+                    "/system/fonts/DroidSansFallback.ttf",
+                    "/system/fonts/NotoSansCJKjp-Regular.otf",
+                    "/system/fonts/NotoSerifCJKsc-Regular.otf",
+                ]
+                font_path = None
+                for fpath in CJK_FONTS:
+                    if os.path.exists(fpath):
+                        font_path = fpath
+                        print(f"[SIGNALIS] Found font: {fpath}")
+                        break
+
+                if font_path:
+                    # 覆盖 Kivy 默认使用的 'Roboto' 字体（Android 默认）
+                    LabelBase.register('Roboto', font_path)
+                    LabelBase.register('RobotoRegular', font_path)
+                    # 也注册为常见别名
+                    LabelBase.register('chinese', font_path)
+                    print(f"[SIGNALIS] Font registered as Roboto")
+                else:
+                    print("[SIGNALIS] WARNING: No CJK font found!")
+                    if os.path.exists("/system/fonts"):
+                        fonts = os.listdir("/system/fonts")
+                        print(f"[SIGNALIS] Available: {fonts[:30]}")
+            except Exception as e:
+                print(f"[SIGNALIS] Font error: {e}")
+
+            # ===== 适配 Android 系统导航栏（防止底部遮挡）=====
+            try:
+                from kivy.utils import platform
+                if platform == "android":
+                    from jnius import autoclass, cast
+                    # 获取窗口并设置底部安全区
+                    Window.softinput_mode = 'below_target'
+                    # 设置底部 padding 避免系统导航栏遮挡
+                    activity = autoclass('org.kivy.android.PythonActivity').mActivity
+                    decor_view = activity.getWindow().getDecorView()
+                    # 让内容延伸到导航栏下方（Android 15 适配）
+                    from android.runnable import run_on_ui_thread
+                    @run_on_ui_thread
+                    def _set_ui():
+                        try:
+                            decor_view.setSystemUiVisibility(
+                                0x00000200 |  # SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                0x00000100 |  # SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                0x00000010    # SYSTEM_UI_FLAG_FULLSCREEN
+                            )
+                        except:
+                            pass
+                    _set_ui()
+                    print("[SIGNALIS] Android UI flags set")
+            except Exception as e:
+                print(f"[SIGNALIS] UI setup error: {e}")
+
             # 设置窗口背景色
             Window.clearcolor = BG_COLOR[:3]
             print("[SIGNALIS] Window.clearcolor set")
