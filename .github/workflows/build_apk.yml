@@ -17,29 +17,63 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq autoconf automake libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev \
-            libltdl-dev git wget unzip default-jdk android-sdk aidl
+            libltdl-dev git wget unzip default-jdk
           pip install --upgrade pip
           pip install buildozer cython
 
-      - name: Cache Android SDK/NDK
-        uses: actions/cache@v4
+      - name: Restore Buildozer cache
+        uses: actions/cache/restore@v4
+        id: cache-restore
         with:
           path: ~/.buildozer
-          key: buildozer-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v2-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-
+            buildozer-v2-
 
-      - name: Build APK with Buildozer
+      - name: Download SDK/NDK and accept licenses
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/default-java
+          export PATH=$JAVA_HOME/bin:$PATH
+          export ANDROID_SDK=$HOME/.buildozer/android/platform/android-sdk
+          
+          # Step 1: Let buildozer download SDK and NDK first
+          buildozer android update || true
+          
+          # Step 2: Accept all SDK licenses
+          if [ -d "$ANDROID_SDK/tools/bin" ]; then
+            yes | $ANDROID_SDK/tools/bin/sdkmanager --sdk_root=$ANDROID_SDK --licenses || true
+          fi
+          
+          # Step 3: Install build-tools and platform-tools explicitly
+          if [ -d "$ANDROID_SDK/tools/bin" ]; then
+            $ANDROID_SDK/tools/bin/sdkmanager --sdk_root=$ANDROID_SDK \
+              "platform-tools" \
+              "build-tools;33.0.0" \
+              "platforms;android-33" || true
+          fi
+          
+          # Step 4: Verify build-tools exist
+          ls -la $ANDROID_SDK/build-tools/ 2>/dev/null || echo "WARNING: build-tools not found"
+          ls -la $ANDROID_SDK/platform-tools/ 2>/dev/null || echo "WARNING: platform-tools not found"
+
+      - name: Build APK
         run: |
           export JAVA_HOME=/usr/lib/jvm/default-java
           export PATH=$JAVA_HOME/bin:$PATH
           buildozer android debug
         timeout-minutes: 45
+
+      - name: Save Buildozer cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: ~/.buildozer
+          key: buildozer-v2-${{ hashFiles('buildozer.spec') }}-${{ github.run_id }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

@@ -76,6 +76,9 @@ android.allow_backup = True
 # 禁用Android NDK的某些检查
 android.skip_update = False
 
+# 自动接受Android SDK许可证
+android.accept_sdk_license = True
+
 # 日志级别
 log_level = 2
 
