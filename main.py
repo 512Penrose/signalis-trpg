@@ -1779,12 +1779,20 @@ class LeftPanel(BoxLayout):
     enemies = DictProperty({})
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "vertical"
-        self.padding = dp(5)
-        self.spacing = dp(5)
-        self._build_ui()
+        import traceback
+        print("[SIGNALIS] LeftPanel.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "vertical"
+            self.padding = dp(5)
+            self.spacing = dp(5)
+            self._build_ui()
+            print("[SIGNALIS] LeftPanel.__init__ done")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in LeftPanel.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
     def _build_ui(self):
         # 标题
@@ -2027,45 +2035,80 @@ class CenterPanel(BoxLayout):
     """中栏 - 判定面板(Tabbed)"""
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "vertical"
-        self.padding = dp(5)
-        self.spacing = dp(5)
-        self._build_ui()
+        import traceback
+        print("[SIGNALIS] CenterPanel.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "vertical"
+            self.padding = dp(5)
+            self.spacing = dp(5)
+            self._build_ui()
+            print("[SIGNALIS] CenterPanel.__init__ done")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in CenterPanel.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
     def _build_ui(self):
-        # 标题
-        self.add_widget(make_label("判定控制 v2", font_size=20, color=ACCENT_COLOR, bold=True,
-                                   size_hint_y=None, height=dp(35)))
+        import traceback
+        print("[SIGNALIS] CenterPanel._build_ui start")
+        try:
+            # 标题
+            self.add_widget(make_label("判定控制 v2", font_size=20, color=ACCENT_COLOR, bold=True,
+                                       size_hint_y=None, height=dp(35)))
+            print("[SIGNALIS] CenterPanel title added")
 
-        # TabbedPanel
-        self.tab_panel = TabbedPanel(
-            do_default_tab=False,
-            tab_width=dp(90),
-            tab_height=dp(38),
-            background_color=PANEL_COLOR,
-            border=(0, 0, 0, 0)
-        )
+            # TabbedPanel
+            print("[SIGNALIS] Building TabbedPanel...")
+            self.tab_panel = TabbedPanel(
+                do_default_tab=False,
+                tab_width=dp(90),
+                tab_height=dp(38),
+                background_color=PANEL_COLOR,
+                border=(0, 0, 0, 0)
+            )
+            print("[SIGNALIS] TabbedPanel created")
 
-        # 基础检定Tab
-        self.tab_panel.add_widget(self._build_basic_tab())
-        # 对抗检定Tab
-        self.tab_panel.add_widget(self._build_opposed_tab())
-        # 战斗Tab
-        self.tab_panel.add_widget(self._build_combat_tab())
-        # 恐怖Tab
-        self.tab_panel.add_widget(self._build_horror_tab())
-        # 共振Tab
-        self.tab_panel.add_widget(self._build_resonance_tab())
-        # PCD Tab
-        self.tab_panel.add_widget(self._build_pcd_tab())
-        # 贴贴Tab
-        self.tab_panel.add_widget(self._build_intimacy_tab())
-        # 恢复Tab
-        self.tab_panel.add_widget(self._build_heal_tab())
+            # 基础检定Tab
+            print("[SIGNALIS] Building basic tab...")
+            self.tab_panel.add_widget(self._build_basic_tab())
+            print("[SIGNALIS] Basic tab added")
+            # 对抗检定Tab
+            print("[SIGNALIS] Building opposed tab...")
+            self.tab_panel.add_widget(self._build_opposed_tab())
+            print("[SIGNALIS] Opposed tab added")
+            # 战斗Tab
+            print("[SIGNALIS] Building combat tab...")
+            self.tab_panel.add_widget(self._build_combat_tab())
+            print("[SIGNALIS] Combat tab added")
+            # 恐怖Tab
+            print("[SIGNALIS] Building horror tab...")
+            self.tab_panel.add_widget(self._build_horror_tab())
+            print("[SIGNALIS] Horror tab added")
+            # 共振Tab
+            print("[SIGNALIS] Building resonance tab...")
+            self.tab_panel.add_widget(self._build_resonance_tab())
+            print("[SIGNALIS] Resonance tab added")
+            # PCD Tab
+            print("[SIGNALIS] Building PCD tab...")
+            self.tab_panel.add_widget(self._build_pcd_tab())
+            print("[SIGNALIS] PCD tab added")
+            # 贴贴Tab
+            print("[SIGNALIS] Building intimacy tab...")
+            self.tab_panel.add_widget(self._build_intimacy_tab())
+            print("[SIGNALIS] Intimacy tab added")
+            # 恢复Tab
+            print("[SIGNALIS] Building heal tab...")
+            self.tab_panel.add_widget(self._build_heal_tab())
+            print("[SIGNALIS] Heal tab added")
 
-        self.add_widget(self.tab_panel)
+            self.add_widget(self.tab_panel)
+            print("[SIGNALIS] TabbedPanel added to layout")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in CenterPanel._build_ui: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
         # 结果显示区域
         self.add_widget(make_label("判定结果", font_size=14, color=ACCENT_COLOR, bold=True,
@@ -2457,12 +2500,20 @@ class RightPanel(BoxLayout):
     """右栏 - 判定日志"""
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "vertical"
-        self.padding = dp(5)
-        self.spacing = dp(5)
-        self._build_ui()
+        import traceback
+        print("[SIGNALIS] RightPanel.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "vertical"
+            self.padding = dp(5)
+            self.spacing = dp(5)
+            self._build_ui()
+            print("[SIGNALIS] RightPanel.__init__ done")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in RightPanel.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
     def _build_ui(self):
         self.add_widget(make_label("判定日志 v2", font_size=18, color=ACCENT_COLOR, bold=True,
@@ -2526,22 +2577,35 @@ class MainLayout(BoxLayout):
     """主布局 - 三栏横屏布局"""
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "horizontal"
-        self.spacing = dp(3)
+        import traceback
+        print("[SIGNALIS] MainLayout.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "horizontal"
+            self.spacing = dp(3)
 
-        # 左栏 - 角色管理 (25%)
-        self.left_panel = LeftPanel(app, size_hint=(0.25, 1))
-        self.add_widget(self.left_panel)
+            # 左栏 - 角色管理 (25%)
+            print("[SIGNALIS] Building LeftPanel...")
+            self.left_panel = LeftPanel(app, size_hint=(0.25, 1))
+            self.add_widget(self.left_panel)
+            print("[SIGNALIS] LeftPanel added")
 
-        # 中栏 - 判定面板 (50%)
-        self.center_panel = CenterPanel(app, size_hint=(0.50, 1))
-        self.add_widget(self.center_panel)
+            # 中栏 - 判定面板 (50%)
+            print("[SIGNALIS] Building CenterPanel...")
+            self.center_panel = CenterPanel(app, size_hint=(0.50, 1))
+            self.add_widget(self.center_panel)
+            print("[SIGNALIS] CenterPanel added")
 
-        # 右栏 - 日志面板 (25%)
-        self.right_panel = RightPanel(app, size_hint=(0.25, 1))
-        self.add_widget(self.right_panel)
+            # 右栏 - 日志面板 (25%)
+            print("[SIGNALIS] Building RightPanel...")
+            self.right_panel = RightPanel(app, size_hint=(0.25, 1))
+            self.add_widget(self.right_panel)
+            print("[SIGNALIS] RightPanel added")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in MainLayout.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
 
 # ---------------------------------------------------------------------------
@@ -2551,35 +2615,58 @@ class SignalisApp(App):
     """SIGNALIS TRPG Adjudicator Kivy App"""
 
     def build(self):
-        # 设置窗口背景色
-        Window.clearcolor = BG_COLOR[:3]
-
-        # 设置横屏
+        import traceback
+        print("[SIGNALIS] build() started")
         try:
-            from kivy.utils import platform
-            if platform == "android":
-                from jnius import autoclass
-                Activity = autoclass("org.kivy.android.PythonActivity")
-                Activity.setRequestedOrientation(0)  # LANDSCAPE
-        except:
-            pass
+            # 设置窗口背景色
+            Window.clearcolor = BG_COLOR[:3]
+            print("[SIGNALIS] Window.clearcolor set")
 
-        # 初始化引擎
-        self.engine = AdjudicatorEngine()
-        self.data_manager = DataManager()
-        self.current_attacker = None
-        self.current_defender = None
+            # 设置横屏
+            try:
+                from kivy.utils import platform
+                print(f"[SIGNALIS] platform = {platform}")
+                if platform == "android":
+                    from jnius import autoclass
+                    Activity = autoclass("org.kivy.android.PythonActivity")
+                    Activity.setRequestedOrientation(0)  # LANDSCAPE
+                    print("[SIGNALIS] Landscape set")
+            except Exception as e:
+                print(f"[SIGNALIS] Landscape setup skipped: {e}")
 
-        # 构建主布局
-        self.main_layout = MainLayout(self)
-        self.left_panel = self.main_layout.left_panel
-        self.center_panel = self.main_layout.center_panel
-        self.right_panel = self.main_layout.right_panel
+            # 初始化引擎
+            print("[SIGNALIS] Initializing engine...")
+            self.engine = AdjudicatorEngine()
+            print("[SIGNALIS] Engine initialized")
+            self.data_manager = DataManager()
+            print("[SIGNALIS] DataManager initialized")
+            self.current_attacker = None
+            self.current_defender = None
 
-        # 加载默认数据
-        self._load_defaults()
+            # 构建主布局
+            print("[SIGNALIS] Building MainLayout...")
+            self.main_layout = MainLayout(self)
+            print("[SIGNALIS] MainLayout built")
+            self.left_panel = self.main_layout.left_panel
+            self.center_panel = self.main_layout.center_panel
+            self.right_panel = self.main_layout.right_panel
+            print("[SIGNALIS] Panels assigned")
 
-        return self.main_layout
+            # 加载默认数据
+            print("[SIGNALIS] Loading defaults...")
+            self._load_defaults()
+            print("[SIGNALIS] Defaults loaded")
+
+            print("[SIGNALIS] build() returning main_layout")
+            return self.main_layout
+
+        except Exception as e:
+            error_msg = traceback.format_exc()
+            print(f"[SIGNALIS] CRASH in build(): {e}")
+            print(f"[SIGNALIS] TRACEBACK: {error_msg}")
+            # 返回一个简单的错误标签而不是崩溃
+            from kivy.uix.label import Label
+            return Label(text=f'启动错误:\n{e}\n\n请检查日志', color=(1, 0.3, 0.3, 1))
 
     def add_log(self, text):
         """添加日志条目"""
@@ -2606,4 +2693,6 @@ class SignalisApp(App):
 
 # =============================================================================
 # 5. 入口点 (Entry Point)
-# =========================================================
+# =============================================================================
+if __name__ == "__main__":
+    SignalisApp().run()
