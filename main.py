@@ -1326,24 +1326,28 @@ INPUT_BG =          (0.18, 0.15, 0.14, 1)
 # ---------------------------------------------------------------------------
 # 工具函数 (Utility functions)
 # ---------------------------------------------------------------------------
-def make_spinner(text: str, values: list, **kwargs):
+def make_spinner(text: str, values: list, font_size=None, **kwargs):
     """Create a themed Spinner widget."""
+    if font_size is None:
+        font_size = sp(13)
     return Spinner(
         text=text, values=values,
         background_color=INPUT_BG,
         color=TEXT_COLOR,
-        font_size=sp(13),
+        font_size=font_size,
         **kwargs
     )
 
 
-def make_button(text: str, callback=None, **kwargs):
+def make_button(text: str, callback=None, font_size=None, **kwargs):
     """Create a themed Button widget."""
+    if font_size is None:
+        font_size = sp(12)
     btn = Button(
         text=text,
         background_color=BUTTON_BG,
         color=TEXT_COLOR,
-        font_size=sp(12),
+        font_size=font_size,
         **kwargs
     )
     if callback:
@@ -2602,6 +2606,4 @@ class SignalisApp(App):
 
 # =============================================================================
 # 5. 入口点 (Entry Point)
-# =============================================================================
-if __name__ == "__main__":
-    SignalisApp().run()
+# =========================================================
