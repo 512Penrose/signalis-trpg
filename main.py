@@ -41,6 +41,9 @@ from kivy.factory import Factory
 # 2. 常量定义 (Constants) - Copied from original
 # =============================================================================
 
+# 全局中文字体路径（在 build() 中被设置为 Android 系统字体）
+_CHINESE_FONT = None
+
 class CharacterType(Enum):
     """角色类型枚举"""
     REPLIKA = "仿形体"
@@ -1330,13 +1333,22 @@ def make_spinner(text: str, values: list, font_size=None, **kwargs):
     """Create a themed Spinner widget."""
     if font_size is None:
         font_size = sp(13)
+    # 限制下拉菜单高度，防止溢出遮挡其他面板
+    if 'dropdown_max_height' not in kwargs:
+        kwargs['dropdown_max_height'] = dp(200)
     return Spinner(
         text=text, values=values,
         background_color=INPUT_BG,
         color=TEXT_COLOR,
         font_size=font_size,
+        font_name=_font(),
         **kwargs
     )
+
+
+def _font():
+    """返回已注册的中文字体路径（Android 系统字体）"""
+    return _CHINESE_FONT if _CHINESE_FONT else 'Roboto'
 
 
 def make_button(text: str, callback=None, font_size=None, **kwargs):
@@ -1348,6 +1360,7 @@ def make_button(text: str, callback=None, font_size=None, **kwargs):
         background_color=BUTTON_BG,
         color=TEXT_COLOR,
         font_size=font_size,
+        font_name=_font(),
         **kwargs
     )
     if callback:
@@ -1359,7 +1372,9 @@ def make_label(text: str, font_size=14, color=TEXT_COLOR, bold=False, **kwargs):
     """Create a themed Label widget."""
     return Label(
         text=text, font_size=sp(font_size),
-        color=color, bold=bold, **kwargs
+        color=color, bold=bold,
+        font_name=_font(),
+        **kwargs
     )
 
 
@@ -1755,7 +1770,8 @@ class InfoPopup(Popup):
         scroll = ScrollView()
         label = Label(
             text=message, font_size=sp(12), color=TEXT_COLOR,
-            size_hint_y=None, markup=True
+            size_hint_y=None, markup=True,
+            font_name=_font()
         )
         label.bind(texture_size=label.setter('size'))
         scroll.add_widget(label)
@@ -1779,12 +1795,20 @@ class LeftPanel(BoxLayout):
     enemies = DictProperty({})
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "vertical"
-        self.padding = dp(5)
-        self.spacing = dp(5)
-        self._build_ui()
+        import traceback
+        print("[SIGNALIS] LeftPanel.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "vertical"
+            self.padding = dp(5)
+            self.spacing = dp(5)
+            self._build_ui()
+            print("[SIGNALIS] LeftPanel.__init__ done")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in LeftPanel.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
     def _build_ui(self):
         # 标题
@@ -1843,7 +1867,8 @@ class LeftPanel(BoxLayout):
         detail_scroll = ScrollView(size_hint=(1, 0.3))
         self.detail_label = Label(
             text="选择一个角色查看详情", font_size=sp(11),
-            color=TEXT_COLOR, size_hint_y=None, markup=True
+            color=TEXT_COLOR, size_hint_y=None, markup=True,
+            font_name=_font()
         )
         self.detail_label.bind(texture_size=self.detail_label.setter('size'))
         self.detail_label.bind(width=lambda inst, w: setattr(inst, 'text_size', (w, None)))
@@ -1863,7 +1888,8 @@ class LeftPanel(BoxLayout):
         btn = Button(
             text=display, halign="left", font_size=sp(11),
             background_color=BUTTON_BG, color=TEXT_COLOR,
-            size_hint_y=None, height=dp(36)
+            size_hint_y=None, height=dp(36),
+            font_name=_font()
         )
         btn.entity = entity
         btn.is_enemy = is_enemy
@@ -2027,45 +2053,80 @@ class CenterPanel(BoxLayout):
     """中栏 - 判定面板(Tabbed)"""
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "vertical"
-        self.padding = dp(5)
-        self.spacing = dp(5)
-        self._build_ui()
+        import traceback
+        print("[SIGNALIS] CenterPanel.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "vertical"
+            self.padding = dp(5)
+            self.spacing = dp(5)
+            self._build_ui()
+            print("[SIGNALIS] CenterPanel.__init__ done")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in CenterPanel.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
     def _build_ui(self):
-        # 标题
-        self.add_widget(make_label("判定控制 v2", font_size=20, color=ACCENT_COLOR, bold=True,
-                                   size_hint_y=None, height=dp(35)))
+        import traceback
+        print("[SIGNALIS] CenterPanel._build_ui start")
+        try:
+            # 标题
+            self.add_widget(make_label("判定控制 v2", font_size=20, color=ACCENT_COLOR, bold=True,
+                                       size_hint_y=None, height=dp(35)))
+            print("[SIGNALIS] CenterPanel title added")
 
-        # TabbedPanel
-        self.tab_panel = TabbedPanel(
-            do_default_tab=False,
-            tab_width=dp(90),
-            tab_height=dp(38),
-            background_color=PANEL_COLOR,
-            border=(0, 0, 0, 0)
-        )
+            # TabbedPanel
+            print("[SIGNALIS] Building TabbedPanel...")
+            self.tab_panel = TabbedPanel(
+                do_default_tab=False,
+                tab_width=dp(70),
+                tab_height=dp(32),
+                background_color=PANEL_COLOR,
+                border=(0, 0, 0, 0)
+            )
+            print("[SIGNALIS] TabbedPanel created")
 
-        # 基础检定Tab
-        self.tab_panel.add_widget(self._build_basic_tab())
-        # 对抗检定Tab
-        self.tab_panel.add_widget(self._build_opposed_tab())
-        # 战斗Tab
-        self.tab_panel.add_widget(self._build_combat_tab())
-        # 恐怖Tab
-        self.tab_panel.add_widget(self._build_horror_tab())
-        # 共振Tab
-        self.tab_panel.add_widget(self._build_resonance_tab())
-        # PCD Tab
-        self.tab_panel.add_widget(self._build_pcd_tab())
-        # 贴贴Tab
-        self.tab_panel.add_widget(self._build_intimacy_tab())
-        # 恢复Tab
-        self.tab_panel.add_widget(self._build_heal_tab())
+            # 基础检定Tab
+            print("[SIGNALIS] Building basic tab...")
+            self.tab_panel.add_widget(self._build_basic_tab())
+            print("[SIGNALIS] Basic tab added")
+            # 对抗检定Tab
+            print("[SIGNALIS] Building opposed tab...")
+            self.tab_panel.add_widget(self._build_opposed_tab())
+            print("[SIGNALIS] Opposed tab added")
+            # 战斗Tab
+            print("[SIGNALIS] Building combat tab...")
+            self.tab_panel.add_widget(self._build_combat_tab())
+            print("[SIGNALIS] Combat tab added")
+            # 恐怖Tab
+            print("[SIGNALIS] Building horror tab...")
+            self.tab_panel.add_widget(self._build_horror_tab())
+            print("[SIGNALIS] Horror tab added")
+            # 共振Tab
+            print("[SIGNALIS] Building resonance tab...")
+            self.tab_panel.add_widget(self._build_resonance_tab())
+            print("[SIGNALIS] Resonance tab added")
+            # PCD Tab
+            print("[SIGNALIS] Building PCD tab...")
+            self.tab_panel.add_widget(self._build_pcd_tab())
+            print("[SIGNALIS] PCD tab added")
+            # 贴贴Tab
+            print("[SIGNALIS] Building intimacy tab...")
+            self.tab_panel.add_widget(self._build_intimacy_tab())
+            print("[SIGNALIS] Intimacy tab added")
+            # 恢复Tab
+            print("[SIGNALIS] Building heal tab...")
+            self.tab_panel.add_widget(self._build_heal_tab())
+            print("[SIGNALIS] Heal tab added")
 
-        self.add_widget(self.tab_panel)
+            self.add_widget(self.tab_panel)
+            print("[SIGNALIS] TabbedPanel added to layout")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in CenterPanel._build_ui: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
         # 结果显示区域
         self.add_widget(make_label("判定结果", font_size=14, color=ACCENT_COLOR, bold=True,
@@ -2074,7 +2135,8 @@ class CenterPanel(BoxLayout):
         result_scroll = ScrollView(size_hint=(1, 0.35))
         self.result_label = Label(
             text="执行检定后结果将显示在这里", font_size=sp(12),
-            color=TEXT_COLOR, size_hint_y=None, markup=True
+            color=TEXT_COLOR, size_hint_y=None, markup=True,
+            font_name=_font()
         )
         self.result_label.bind(texture_size=self.result_label.setter('size'))
         self.result_label.bind(width=lambda inst, w: setattr(inst, 'text_size', (w, None)))
@@ -2457,12 +2519,20 @@ class RightPanel(BoxLayout):
     """右栏 - 判定日志"""
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "vertical"
-        self.padding = dp(5)
-        self.spacing = dp(5)
-        self._build_ui()
+        import traceback
+        print("[SIGNALIS] RightPanel.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "vertical"
+            self.padding = dp(5)
+            self.spacing = dp(5)
+            self._build_ui()
+            print("[SIGNALIS] RightPanel.__init__ done")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in RightPanel.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
     def _build_ui(self):
         self.add_widget(make_label("判定日志 v2", font_size=18, color=ACCENT_COLOR, bold=True,
@@ -2471,7 +2541,8 @@ class RightPanel(BoxLayout):
         log_scroll = ScrollView()
         self.log_label = Label(
             text="暂无判定记录", font_size=sp(11),
-            color=TEXT_COLOR, size_hint_y=None, markup=True
+            color=TEXT_COLOR, size_hint_y=None, markup=True,
+            font_name=_font()
         )
         self.log_label.bind(texture_size=self.log_label.setter('size'))
         self.log_label.bind(width=lambda inst, w: setattr(inst, 'text_size', (w, None)))
@@ -2526,22 +2597,46 @@ class MainLayout(BoxLayout):
     """主布局 - 三栏横屏布局"""
 
     def __init__(self, app, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app
-        self.orientation = "horizontal"
-        self.spacing = dp(3)
+        import traceback
+        print("[SIGNALIS] MainLayout.__init__ start")
+        try:
+            super().__init__(**kwargs)
+            self.app = app
+            self.orientation = "horizontal"
+            self.spacing = dp(3)
 
-        # 左栏 - 角色管理 (25%)
-        self.left_panel = LeftPanel(app, size_hint=(0.25, 1))
-        self.add_widget(self.left_panel)
+            # Android 系统导航栏适配：底部留出安全区
+            try:
+                from kivy.utils import platform
+                if platform == "android":
+                    self.padding = [0, 0, 0, dp(50)]  # 底部50dp避开导航栏
+                    print("[SIGNALIS] Android bottom padding set")
+                else:
+                    self.padding = [0, 0, 0, 0]
+            except Exception:
+                self.padding = [0, 0, 0, 0]
 
-        # 中栏 - 判定面板 (50%)
-        self.center_panel = CenterPanel(app, size_hint=(0.50, 1))
-        self.add_widget(self.center_panel)
+            # 左栏 - 角色管理 (25%)
+            print("[SIGNALIS] Building LeftPanel...")
+            self.left_panel = LeftPanel(app, size_hint=(0.25, 1))
+            self.add_widget(self.left_panel)
+            print("[SIGNALIS] LeftPanel added")
 
-        # 右栏 - 日志面板 (25%)
-        self.right_panel = RightPanel(app, size_hint=(0.25, 1))
-        self.add_widget(self.right_panel)
+            # 中栏 - 判定面板 (50%)
+            print("[SIGNALIS] Building CenterPanel...")
+            self.center_panel = CenterPanel(app, size_hint=(0.50, 1))
+            self.add_widget(self.center_panel)
+            print("[SIGNALIS] CenterPanel added")
+
+            # 右栏 - 日志面板 (25%)
+            print("[SIGNALIS] Building RightPanel...")
+            self.right_panel = RightPanel(app, size_hint=(0.25, 1))
+            self.add_widget(self.right_panel)
+            print("[SIGNALIS] RightPanel added")
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH in MainLayout.__init__: {e}")
+            print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
+            raise
 
 
 # ---------------------------------------------------------------------------
@@ -2551,59 +2646,66 @@ class SignalisApp(App):
     """SIGNALIS TRPG Adjudicator Kivy App"""
 
     def build(self):
-        # 设置窗口背景色
-        Window.clearcolor = BG_COLOR[:3]
+        import traceback
+        import os
+        print("[SIGNALIS] build() started")
 
-        # 设置横屏
+        # ===== 加载中文字体 =====
+        global _CHINESE_FONT
         try:
-            from kivy.utils import platform
-            if platform == "android":
-                from jnius import autoclass
-                Activity = autoclass("org.kivy.android.PythonActivity")
-                Activity.setRequestedOrientation(0)  # LANDSCAPE
-        except:
-            pass
+            from kivy.core.text import LabelBase
+            CJK_FONTS = [
+                "/system/fonts/MiSans.ttf",
+                "/system/fonts/MiSans-Regular.ttf",
+                "/system/fonts/MiSans-Medium.ttf",
+                "/system/fonts/NotoSansSC-VF.ttf",
+                "/system/fonts/NotoSansSC-Regular.otf",
+                "/system/fonts/NotoSansCJKsc-Regular.otf",
+                "/system/fonts/NotoSansCJK-Regular.ttc",
+                "/system/fonts/DroidSansFallback.ttf",
+                "/system/fonts/DroidSansFallbackFull.ttf",
+            ]
+            for fpath in CJK_FONTS:
+                if os.path.exists(fpath):
+                    _CHINESE_FONT = fpath
+                    break
+            if _CHINESE_FONT:
+                LabelBase.register('chinese', _CHINESE_FONT)
+                print(f"[SIGNALIS] Font: {_CHINESE_FONT}")
+            else:
+                print("[SIGNALIS] No CJK font!")
+        except Exception as e:
+            print(f"[SIGNALIS] Font err: {e}")
 
-        # 初始化引擎
-        self.engine = AdjudicatorEngine()
-        self.data_manager = DataManager()
-        self.current_attacker = None
-        self.current_defender = None
+        try:
+            Window.clearcolor = BG_COLOR[:3]
 
-        # 构建主布局
-        self.main_layout = MainLayout(self)
-        self.left_panel = self.main_layout.left_panel
-        self.center_panel = self.main_layout.center_panel
-        self.right_panel = self.main_layout.right_panel
+            # 横屏
+            try:
+                from kivy.utils import platform
+                if platform == "android":
+                    from jnius import autoclass
+                    autoclass("org.kivy.android.PythonActivity").setRequestedOrientation(0)
+            except:
+                pass
 
-        # 加载默认数据
-        self._load_defaults()
+            self.engine = AdjudicatorEngine()
+            self.data_manager = DataManager()
+            self.current_attacker = None
+            self.current_defender = None
 
-        return self.main_layout
+            self.main_layout = MainLayout(self)
+            self.left_panel = self.main_layout.left_panel
+            self.center_panel = self.main_layout.center_panel
+            self.right_panel = self.main_layout.right_panel
 
-    def add_log(self, text):
-        """添加日志条目"""
-        self.right_panel.add_entry(text)
+            self._load_defaults()
+            print("[SIGNALIS] build() OK")
+            return self.main_layout
 
-    def _load_defaults(self):
-        """加载默认角色和敌人"""
-        for template in DEFAULT_CHARACTER_TEMPLATES[:3]:
-            char = Character.from_dict(template)
-            char.max_hp = char.calculate_hp()
-            char.current_hp = char.max_hp
-            self.left_panel.add_character(char)
+        except Exception as e:
+            print(f"[SIGNALIS] CRASH: {e}")
+            print(f"[SIGNALIS] TRACE: {traceback.format_exc()}")
+            from kivy.uix.label import Label
+            return Label(text=f'错误:\n{e}', font_name=_font())
 
-        for template in DEFAULT_ENEMY_TEMPLATES[:3]:
-            enemy = Enemy.from_template(template)
-            self.left_panel.add_enemy(enemy)
-
-    def on_pause(self):
-        return True
-
-    def on_resume(self):
-        pass
-
-
-# =============================================================================
-# 5. 入口点 (Entry Point)
-# =========================================================
