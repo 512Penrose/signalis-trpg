@@ -1,0 +1,183 @@
+# -*- coding: utf-8 -*-
+# =============================================================================
+# SIGNALIS TRPG Adjudicator - KV Style Definitions
+# =============================================================================
+# This file provides visual styling enhancements for the Kivy app.
+# The main UI is built programmatically in main.py for maximum flexibility.
+# This KV file customizes the default appearance of Kivy widgets.
+
+# =============================================================================
+# SIGNALIS Dark Theme - Global Style Overrides
+# =============================================================================
+
+# TabbedPanel styling - dark theme with copper accent
+<TabbedPanel>:
+    background_color: 0.12, 0.10, 0.10, 1
+    border: [0, 0, 0, 0]
+    do_default_tab: False
+
+<TabbedPanelHeader>:
+    background_color: 0.18, 0.15, 0.14, 1
+    color: 0.9, 0.88, 0.85, 1
+    bold: True
+    font_size: '12sp'
+
+<TabbedPanelHeader>:
+    # Selected tab highlight
+    background_down: ''
+    background_normal: ''
+
+<TabbedPanelContent>:
+    canvas.before:
+        Color:
+            rgba: 0.10, 0.08, 0.08, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+# Button styling
+<Button>:
+    background_color: 0.20, 0.17, 0.15, 1
+    color: 0.9, 0.88, 0.85, 1
+    font_size: '12sp'
+    background_normal: ''
+    background_down: ''
+    canvas.before:
+        Color:
+            rgba: self.background_color
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [3,]
+
+# Spinner styling
+<Spinner>:
+    background_color: 0.18, 0.15, 0.14, 1
+    color: 0.9, 0.88, 0.85, 1
+    font_size: '12sp'
+    sync_height: True
+
+# TextInput styling
+<TextInput>:
+    background_color: 0.18, 0.15, 0.14, 1
+    foreground_color: 0.9, 0.88, 0.85, 1
+    cursor_color: 0.72, 0.45, 0.20, 1
+    font_size: '13sp'
+    padding: [8, 8]
+    multiline: False
+
+# Popup styling
+<Popup>:
+    background_color: 0.12, 0.10, 0.10, 1
+    title_color: 0.72, 0.45, 0.20, 1
+    title_size: '16sp'
+    title_align: 'center'
+    separator_color: 0.72, 0.45, 0.20, 1
+    border: [8, 8, 8, 8]
+
+# ScrollView styling - ensure proper scrolling
+<ScrollView>:
+    bar_width: '6dp'
+    bar_color: 0.72, 0.45, 0.20, 0.6
+    bar_inactive_color: 0.40, 0.35, 0.32, 0.3
+    scroll_type: ['bars', 'content']
+
+# Label base styling
+<Label>:
+    color: 0.9, 0.88, 0.85, 1
+    font_size: '13sp'
+    text_size: self.size
+    halign: 'left'
+    valign: 'middle'
+
+# BoxLayout panels
+<BoxLayout>:
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 0
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+# =============================================================================
+# Custom Widget Style Classes
+# =============================================================================
+
+# Panel background for sections
+<PanelBackground@BoxLayout>:
+    canvas.before:
+        Color:
+            rgba: 0.12, 0.10, 0.10, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [4,]
+
+# Section divider line
+<SectionDivider@Widget>:
+    size_hint_y: None
+    height: '2dp'
+    canvas:
+        Color:
+            rgba: 0.72, 0.45, 0.20, 0.5
+        Line:
+            points: [self.x, self.center_y, self.right, self.center_y]
+            width: 1
+
+# Accent title label
+<AccentTitle@Label>:
+    font_size: '16sp'
+    color: 0.72, 0.45, 0.20, 1
+    bold: True
+    size_hint_y: None
+    height: '30dp'
+
+# Status indicator (colored dot)
+<StatusDot@Widget>:
+    size_hint: None, None
+    size: '10dp', '10dp'
+    canvas:
+        Color:
+            rgba: self.status_color if hasattr(self, 'status_color') else (0.5, 0.5, 0.5, 1)
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
+# =============================================================================
+# Main Layout Structure Reference
+# =============================================================================
+# The actual layout is built in Python (main.py) as follows:
+#
+# BoxLayout(horizontal)
+#   +-- LeftPanel   (size_hint: 0.25, 1)  - Character/Enemy management
+#   |     +-- attacker/defender labels
+#   |     +-- target selection buttons
+#   |     +-- character list (ScrollView)
+#   |     +-- enemy list (ScrollView)
+#   |     +-- detail display (ScrollView)
+#   |     +-- scene switch button
+#   |
+#   +-- CenterPanel (size_hint: 0.50, 1)  - Adjudication tabs
+#   |     +-- TabbedPanel with 8 tabs:
+#   |     |     1. 基础检定 (Basic Check)
+#   |     |     2. 对抗检定 (Opposed Check)
+#   |     |     3. 战斗判定 (Combat)
+#   |     |     4. 恐怖检定 (Horror)
+#   |     |     5. 生物共振 (Resonance)
+#   |     |     6. PCD操作 (PCD)
+#   |     |     7. 贴贴机制 (Intimacy)
+#   |     |     8. 恢复/治疗 (Heal)
+#   |     +-- Result display area (ScrollView)
+#   |
+#   +-- RightPanel  (size_hint: 0.25, 1)  - Log panel
+#         +-- Log title
+#         +-- Log display (ScrollView)
+#         +-- Refresh/Clear/Export buttons
+#
+# =============================================================================
+
+# =============================================================================
+# Animation Definitions (for future enhancements)
+# =============================================================================
+# Note: Animations can be added programmatically in main.py
+# Example fade-in effect for result display could be implemented there.
