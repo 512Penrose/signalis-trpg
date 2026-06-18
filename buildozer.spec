@@ -16,7 +16,7 @@ source.dir = .
 source.include_exts = py,kv,json,png,jpg,otf,ttf,xml
 
 # (str) Application versioning
-version = 0.0.7
+version = 0.0.8
 
 # (list) Source directories to include
 source.include_dirs = fonts
@@ -34,7 +34,7 @@ orientation = landscape
 fullscreen = 1
 
 # Presplash background color during loading
-android.presplash_color = #FF1a1a2e
+android.presplash_color = #1a1a2e
 
 #
 # Android specific
@@ -45,6 +45,7 @@ android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, V
 
 # (int) Target Android API - API 33 for NDK 25b stable compatibility
 android.api = 33
+android.sdk = 33
 
 # (int) Minimum API your APK will support.
 # Raised to 28 for Android 15 compatibility
