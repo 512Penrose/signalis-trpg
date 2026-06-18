@@ -121,6 +121,27 @@ jobs:
             ls -la "$d" 2>/dev/null || true
           done
 
+      - name: Fix AndroidManifest.xml (remove duplicate uses-feature if exists)
+        run: |
+          MANIFEST=".buildozer/android/platform/build-arm64-v8a/dists/signalis_trpg/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            echo "Before fix:"
+            grep -n "uses-feature" "$MANIFEST" || true
+            # Remove duplicate glEsVersion lines (keep only the first one)
+            python3 -c "
+import xml.etree.ElementTree as ET
+import re
+with open('$MANIFEST', 'r') as f:
+    content = f.read()
+# Remove all uses-feature lines with glEsVersion (p4a will generate one)
+content = re.sub(r'\s*<uses-feature[^>]*android:glEsVersion[^/]*/>\n', '', content)
+with open('$MANIFEST', 'w') as f:
+    f.write(content)
+"
+            echo "After fix:"
+            grep -n "uses-feature" "$MANIFEST" || true
+          fi
+
       - name: Build APK (first pass) with full logging
         timeout-minutes: 120
         continue-on-error: true
