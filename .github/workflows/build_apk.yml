@@ -122,24 +122,12 @@ jobs:
           done
 
       - name: Fix AndroidManifest.xml (remove duplicate uses-feature if exists)
-  run: |
-    MANIFEST=".buildozer/android/platform/build-arm64-v8a/dists/signalis_trpg/src/main/AndroidManifest.xml"
-    if [ -f "$MANIFEST" ]; then
-      echo "Before fix:"
-      grep -n "uses-feature" "$MANIFEST" || true
-      sed -i '/android:glEsVersion/d' "$MANIFEST"
-      echo "After fix:"
-      grep -n "uses-feature" "$MANIFEST" || true
-    fi
-import xml.etree.ElementTree as ET
-import re
-with open('$MANIFEST', 'r') as f:
-    content = f.read()
-# Remove all uses-feature lines with glEsVersion (p4a will generate one)
-content = re.sub(r'\s*<uses-feature[^>]*android:glEsVersion[^/]*/>\n', '', content)
-with open('$MANIFEST', 'w') as f:
-    f.write(content)
-"
+        run: |
+          MANIFEST=".buildozer/android/platform/build-arm64-v8a/dists/signalis_trpg/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            echo "Before fix:"
+            grep -n "uses-feature" "$MANIFEST" || true
+            sed -i '/android:glEsVersion/d' "$MANIFEST"
             echo "After fix:"
             grep -n "uses-feature" "$MANIFEST" || true
           fi
