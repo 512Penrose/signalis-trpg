@@ -13,10 +13,10 @@ package.domain = org.signalis
 source.dir = .
 
 # (list) Source files to include (let empty to include all the files)
-source.include_exts = py,kv,json,png,jpg,otf,ttf,xml
+source.include_exts = py,kv,json,png,jpg,otf,ttf,ttc,xml
 
 # (str) Application versioning
-version = 0.0.8
+version = 0.0.9
 
 # (list) Source directories to include
 source.include_dirs = fonts

@@ -1379,12 +1379,23 @@ def make_button(text: str, callback=None, font_size=None, **kwargs):
 
 def make_label(text: str, font_size=14, color=TEXT_COLOR, bold=False, **kwargs):
     """Create a themed Label widget."""
+    if 'size_hint_y' not in kwargs:
+        kwargs['size_hint_y'] = None
     return Label(
         text=text, font_size=sp(font_size),
         color=color, bold=bold,
         font_name=_font(),
         **kwargs
     )
+
+
+def add_panel_bg(widget, color=PANEL_COLOR):
+    """为 widget 添加 canvas.before 背景绘制，避免 Android 黑屏"""
+    with widget.canvas.before:
+        Color(*color)
+        widget._bg_rect = Rectangle(pos=widget.pos, size=widget.size)
+    widget.bind(pos=lambda obj, val: setattr(widget._bg_rect, 'pos', val))
+    widget.bind(size=lambda obj, val: setattr(widget._bg_rect, 'size', val))
 
 
 # ---------------------------------------------------------------------------
@@ -1396,12 +1407,13 @@ class ConfirmPopup(Popup):
         super().__init__(**kwargs)
         self.title = title
         self.title_font = _font()
-        self.size_hint = (0.6, 0.4)
+        self.size_hint = (0.8, 0.5)
         self.auto_dismiss = True
         self.background_color = PANEL_COLOR
         self.on_confirm = on_confirm
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(10))
+        add_panel_bg(layout)
         layout.add_widget(make_label(message, font_size=14))
 
         btn_box = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
@@ -1429,7 +1441,7 @@ class CharacterEditorPopup(Popup):
         super().__init__(**kwargs)
         self.title = "创建角色" if character is None else f"编辑角色 - {character.name}"
         self.title_font = _font()
-        self.size_hint = (0.85, 0.9)
+        self.size_hint = (0.95, 0.95)
         self.auto_dismiss = False
         self.background_color = PANEL_COLOR
         self.on_save = on_save
@@ -1444,10 +1456,11 @@ class CharacterEditorPopup(Popup):
 
     def _build_ui(self):
         main_layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
+        add_panel_bg(main_layout)
 
         # 滚动区域
         scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
-        form = GridLayout(cols=2, spacing=dp(8), padding=dp(5), size_hint_y=None)
+        form = GridLayout(cols=1, spacing=dp(8), padding=dp(5), size_hint_y=None)
         form.bind(minimum_height=form.setter('height'))
 
         # 名称
@@ -1462,12 +1475,11 @@ class CharacterEditorPopup(Popup):
 
         # 类型
         form.add_widget(make_label("类型:", font_size=13))
-        self.type_spinner = Spinner(
-            text=self.character.char_type.name,
-            values=["HUMAN", "REPLIKA"],
-            background_color=INPUT_BG, color=TEXT_COLOR,
-            font_size=sp(13), size_hint_y=None, height=dp(40),
-            font_name=_font()
+        self.type_spinner = make_spinner(
+            self.character.char_type.name,
+            ["HUMAN", "REPLIKA"],
+            font_size=sp(13),
+            size_hint_y=None, height=dp(40)
         )
         form.add_widget(self.type_spinner)
 
@@ -1483,7 +1495,6 @@ class CharacterEditorPopup(Popup):
 
         # 属性
         form.add_widget(make_label("--- 属性 ---", font_size=14, color=ACCENT_COLOR, bold=True))
-        form.add_widget(make_label("", font_size=1))
 
         self.attr_inputs = {}
         for key, (name, abbr, desc) in ATTRIBUTES.items():
@@ -1500,12 +1511,10 @@ class CharacterEditorPopup(Popup):
 
         # 技能 (按类别分组)
         form.add_widget(make_label("--- 技能 ---", font_size=14, color=ACCENT_COLOR, bold=True))
-        form.add_widget(make_label("", font_size=1))
 
         self.skill_inputs = {}
         for cat_name, skill_keys in SKILL_CATEGORIES.items():
             form.add_widget(make_label(f"[{cat_name}]", font_size=12, color=DIM_TEXT))
-            form.add_widget(make_label("", font_size=1))
             for sk in skill_keys:
                 name = SKILLS[sk][0]
                 form.add_widget(make_label(f"{name}:", font_size=11))
@@ -1521,7 +1530,6 @@ class CharacterEditorPopup(Popup):
 
         # 状态
         form.add_widget(make_label("--- 状态 ---", font_size=14, color=ACCENT_COLOR, bold=True))
-        form.add_widget(make_label("", font_size=1))
 
         status_fields = [
             ("HP:", "current_hp", str(self.character.current_hp)),
@@ -1543,23 +1551,21 @@ class CharacterEditorPopup(Popup):
 
         # 护甲
         form.add_widget(make_label("护甲:", font_size=12))
-        self.armor_spinner = Spinner(
-            text=ARMOR_DISPLAY_MAP.get(self.character.armor, self.character.armor),
-            values=ARMOR_DISPLAY_NAMES,
-            background_color=INPUT_BG, color=TEXT_COLOR,
-            font_size=sp(12), size_hint_y=None, height=dp(36),
-            font_name=_font()
+        self.armor_spinner = make_spinner(
+            ARMOR_DISPLAY_MAP.get(self.character.armor, self.character.armor),
+            ARMOR_DISPLAY_NAMES,
+            font_size=sp(12),
+            size_hint_y=None, height=dp(36)
         )
         form.add_widget(self.armor_spinner)
 
         # 武器
         form.add_widget(make_label("武器:", font_size=12))
-        self.weapon_spinner = Spinner(
-            text=WEAPON_DISPLAY_MAP.get(self.character.equipped_weapon, self.character.equipped_weapon),
-            values=WEAPON_DISPLAY_NAMES,
-            background_color=INPUT_BG, color=TEXT_COLOR,
-            font_size=sp(12), size_hint_y=None, height=dp(36),
-            font_name=_font()
+        self.weapon_spinner = make_spinner(
+            WEAPON_DISPLAY_MAP.get(self.character.equipped_weapon, self.character.equipped_weapon),
+            WEAPON_DISPLAY_NAMES,
+            font_size=sp(12),
+            size_hint_y=None, height=dp(36)
         )
         form.add_widget(self.weapon_spinner)
 
@@ -1649,11 +1655,12 @@ class TemplateSelectorPopup(Popup):
         super().__init__(**kwargs)
         self.title = "选择模板"
         self.title_font = _font()
-        self.size_hint = (0.7, 0.7)
+        self.size_hint = (0.9, 0.8)
         self.background_color = PANEL_COLOR
         self.on_select = on_select
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
+        add_panel_bg(layout)
 
         scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         self.btn_container = BoxLayout(
@@ -1695,11 +1702,12 @@ class EnemyTemplateSelectorPopup(Popup):
         super().__init__(**kwargs)
         self.title = "选择敌人模板"
         self.title_font = _font()
-        self.size_hint = (0.7, 0.7)
+        self.size_hint = (0.9, 0.8)
         self.background_color = PANEL_COLOR
         self.on_select = on_select
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
+        add_panel_bg(layout)
 
         scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         self.btn_container = BoxLayout(
@@ -1746,6 +1754,7 @@ class HumanHealPopup(Popup):
         self.on_confirm = on_confirm
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(10))
+        add_panel_bg(layout)
         layout.add_widget(make_label("每1HP消耗1共振能量\n每天最多恢复2HP", font_size=13))
 
         layout.add_widget(make_label("可用共振能量:", font_size=12))
@@ -1786,10 +1795,11 @@ class InfoPopup(Popup):
         super().__init__(**kwargs)
         self.title = title
         self.title_font = _font()
-        self.size_hint = (0.7, 0.6)
+        self.size_hint = (0.9, 0.8)
         self.background_color = PANEL_COLOR
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
+        add_panel_bg(layout)
 
         scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         label = Label(
@@ -2759,22 +2769,21 @@ class SignalisApp(App):
             # 1. 优先使用内置字体（打包到 APK 中）
             app_dir = os.path.dirname(os.path.abspath(__file__))
             bundled_fonts = [
+                os.path.join(app_dir, 'fonts', 'NotoSansCJK-Regular.ttc'),
                 os.path.join(app_dir, 'fonts', 'NotoSansSC-Regular.otf'),
                 os.path.join(app_dir, 'fonts', 'NotoSansSC-Regular.ttf'),
             ]
             
-            # 2. 系统字体回退列表
+            # 2. 系统字体回退列表（优先 .ttc / .otf，最后 Roboto）
             system_fonts = [
-                "/system/fonts/NotoSansSC-Regular.ttf",
-                "/system/fonts/NotoSansSC-Bold.ttf",
                 "/system/fonts/NotoSansCJK-Regular.ttc",
                 "/system/fonts/NotoSansCJKsc-Regular.ttc",
+                "/system/fonts/NotoSansSC-Regular.ttf",
+                "/system/fonts/NotoSansSC-Bold.ttf",
+                "/system/fonts/NotoSansSC-VF.ttf",
                 "/system/fonts/MiSans.ttf",
                 "/system/fonts/MiSans-Regular.ttf",
                 "/system/fonts/MiSans-Medium.ttf",
-                "/system/fonts/NotoSansSC-VF.ttf",
-                "/system/fonts/NotoSansSC-Regular.otf",
-                "/system/fonts/NotoSansCJKsc-Regular.otf",
                 "/system/fonts/DroidSansFallback.ttf",
                 "/system/fonts/DroidSansFallbackFull.ttf",
                 "/system/fonts/DroidSans.ttf",

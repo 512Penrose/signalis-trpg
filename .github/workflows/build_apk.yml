@@ -1,4 +1,4 @@
-name: Build SIGNALIS TRPG APK v0.0.8
+name: Build SIGNALIS TRPG APK v0.0.9
 
 on:
   push:
@@ -50,27 +50,23 @@ jobs:
           # Install Noto CJK fonts from Ubuntu package (reliable, no download issues)
           sudo apt-get install -y -qq fonts-noto-cjk
           # Find the installed CJK font and copy to project
-          FONT_FILE=$(find /usr/share/fonts -name "NotoSansCJKsc-Regular.otf" 2>/dev/null | head -1)
+          # Ubuntu fonts-noto-cjk installs .ttc files; we support both .ttc and .otf
+          FONT_FILE=$(find /usr/share/fonts -name "NotoSansCJK*Regular*" 2>/dev/null | head -1)
           if [ -z "$FONT_FILE" ]; then
-            FONT_FILE=$(find /usr/share/fonts -name "NotoSansSC-Regular.otf" 2>/dev/null | head -1)
+            FONT_FILE=$(find /usr/share/fonts -name "NotoSansSC*Regular*" 2>/dev/null | head -1)
           fi
           if [ -n "$FONT_FILE" ]; then
-            cp "$FONT_FILE" fonts/NotoSansSC-Regular.otf
-            echo "Font installed: $FONT_FILE -> fonts/NotoSansSC-Regular.otf"
-            ls -lh fonts/NotoSansSC-Regular.otf
+            # Copy with original extension to preserve .ttc
+            cp "$FONT_FILE" fonts/
+            echo "Font installed: $FONT_FILE -> fonts/"
+            ls -lh fonts/
           else
             echo "WARNING: No CJK font found in system, will use Android system fallback"
             find /usr/share/fonts -name "*Noto*" 2>/dev/null | head -20 || true
           fi
-          # Verify font file
-          SIZE=$(stat -c%s fonts/NotoSansSC-Regular.otf 2>/dev/null || echo 0)
-          echo "Font size: $SIZE bytes"
-          if [ "$SIZE" -lt 1024 ]; then
-            echo "WARNING: Font file too small or missing, using system fallback"
-            rm -f fonts/NotoSansSC-Regular.otf
-          else
-            echo "Font validation passed"
-          fi
+          # Verify font files
+          FONT_COUNT=$(ls fonts/ 2>/dev/null | wc -l)
+          echo "Font files in fonts/: $FONT_COUNT"
           ls -la fonts/ || true
 
       - name: Restore Buildozer cache
@@ -80,9 +76,9 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: ${{ runner.os }}-buildozer-v0.0.8-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}
+          key: ${{ runner.os }}-buildozer-v0.0.9-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-v0.0.8-
+            ${{ runner.os }}-buildozer-v0.0.9-
 
       - name: Initialize buildozer and download p4a
         run: |
@@ -154,7 +150,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: signalis-trpg-v0.0.8
+          name: signalis-trpg-v0.0.9
           path: |
             bin/*.apk
             **/*.apk
@@ -163,20 +159,20 @@ jobs:
       - name: Create Release
         if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         with:
-          tag_name: v0.0.8
-          name: SIGNALIS TRPG v0.0.8
+          tag_name: v0.0.9
+          name: SIGNALIS TRPG v0.0.9
           body: |
-            ## SIGNALIS TRPG 判定程序 v0.0.8
-            - Kivy Spinner 兼容性修复（移除无效参数）
-            - NotoSansSC 字体加载验证与错误处理
-            - Android 15 全屏兼容（移除 android:theme 冲突）
-            - Python 3.11.9 锁定，避免自动升级问题
-            - 使用 Ubuntu 系统字体包安装 CJK 字体
+            ## SIGNALIS TRPG 判定程序 v0.0.9
+            ### Bug 修复
+            - **修复 Popup 黑屏问题**：移除所有 Popup 的 `background = ''` 设置，改为保留默认背景 + `background_color` 调制；为每个 Popup 的 content 添加 `canvas.before` 背景绘制，确保 Android 上正确渲染
+            - **修复汉字显示不全**：`build_apk.yml` 字体查找支持 `.ttc`（TrueType Collection），`buildozer.spec` 添加 `ttc` 到 `source.include_exts`；`main.py` 内置字体回退列表增加 `.ttc` 优先，避免回退到不完整的系统字体
+            - 保留 v0.0.8 所有修复：Spinner 黑框修复、Tab 可滚动、响应式布局、单列表单、Android 15 兼容、Python 3.11.9 锁定
           files: |
             bin/*.apk
             **/*.apk
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
