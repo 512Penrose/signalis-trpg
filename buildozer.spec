@@ -63,7 +63,6 @@ android.manifest.launch_mode = singleTask
 
 # (str) Extra xml to write directly inside the <manifest> element
 # Add explicit SDK target for Android 13+ compatibility
-android.extra_manifest_xml = ./extra_manifest.xml
 
 # (list) The Android archs to build for
 android.archs = arm64-v8a
