@@ -1,2 +1,2 @@
-<uses-sdk android:targetSdkVersion="35" />
+<uses-sdk android:targetSdkVersion="33" />
 <uses-feature android:glEsVersion="0x00020000" android:required="true" />

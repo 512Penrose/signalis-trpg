@@ -1,4 +1,4 @@
-name: Build SIGNALIS TRPG APK
+name: Build SIGNALIS TRPG APK v0.0.6
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-22.04
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,21 +28,77 @@ jobs:
           sudo apt-get install -y -qq autoconf automake libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev \
             libltdl-dev git wget unzip default-jdk libstdc++6:i386 \
-            libgcc-s1:i386 zlib1g:i386
+            libgcc-s1:i386 zlib1g:i386 ccache
+          ccache --max-size=2G
 
       - name: Install buildozer and cython
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.37 pyjnius
 
-      - name: Clean old builds and cache
+      - name: Download Chinese font
+        run: |
+          mkdir -p fonts
+          # Primary: Google Fonts CDN (most reliable)
+          wget -q --timeout=30 -O fonts/NotoSansSC-Regular.otf \
+            "https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf" \
+            || curl -L --max-time 30 -o fonts/NotoSansSC-Regular.otf \
+              "https://github.com/notofonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf" \
+            || true
+          # Check if download succeeded
+          if [ -f "fonts/NotoSansSC-Regular.otf" ] && [ -s "fonts/NotoSansSC-Regular.otf" ]; then
+            echo "Font downloaded successfully: $(ls -lh fonts/NotoSansSC-Regular.otf)"
+          else
+            echo "WARNING: Font download failed, will use system fonts fallback"
+            rm -f fonts/NotoSansSC-Regular.otf
+          fi
+          ls -la fonts/ || true
+
+      - name: Restore Buildozer cache
+        uses: actions/cache/restore@v4
+        id: cache-restore
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: ${{ runner.os }}-buildozer-v0.0.6-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-v0.0.6-
+            ${{ runner.os }}-buildozer-
+
+      - name: Initialize buildozer
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/default-java
+          export PATH=$JAVA_HOME/bin:$PATH
+          buildozer android update || true
+
+      - name: Fix p4a recipe versions (force hostpython3 & python3 to 3.11.9)
+        run: |
+          P4A_RECIPES=".buildozer/android/platform/python-for-android/pythonforandroid/recipes"
+          if [ ! -d "$P4A_RECIPES" ]; then
+            echo "WARNING: p4a recipes not found, trying to reinitialize..."
+            buildozer android update || true
+          fi
+          for recipe in hostpython3 python3; do
+            RECIPE_FILE="$P4A_RECIPES/$recipe/__init__.py"
+            if [ -f "$RECIPE_FILE" ]; then
+              sed -i 's/version = [\"'"'"'\"'][0-9]\+\.[0-9]\+\.[0-9]\+[\"'"'"'\"']/version = "3.11.9"/g' "$RECIPE_FILE"
+              sed -i 's/version = "[0-9]\+\.[0-9]\+\.[0-9]\+"/version = "3.11.9"/g' "$RECIPE_FILE"
+              sed -i 's/version = '\"'"'\"'"'"'[0-9]\+\.[0-9]\+\.[0-9]\+\"'"'\"'"'"'/version = "3.11.9"/g' "$RECIPE_FILE"
+              echo "Fixed $recipe:"
+              grep -n 'version' "$RECIPE_FILE" | grep -i '3\.11' | head -2
+            else
+              echo "WARNING: Recipe file not found for $recipe"
+            fi
+          done
+
+      - name: Clean old dist builds
         run: |
           rm -rf bin/*.apk 2>/dev/null || true
-          rm -rf .buildozer/android/platform/build-* 2>/dev/null || true
-          rm -rf .buildozer/android/platform/python-for-android 2>/dev/null || true
+          rm -rf .buildozer/android/platform/build-*/dists/* 2>/dev/null || true
 
-      - name: Build APK (first pass - may timeout for SDK download)
-        timeout-minutes: 90
+      - name: Build APK (first pass - SDK download)
+        timeout-minutes: 120
         continue-on-error: true
         id: build1
         run: |
@@ -50,13 +106,59 @@ jobs:
           export PATH=$JAVA_HOME/bin:$PATH
           buildozer android debug 2>&1 || echo "BUILD_FAILED=1" >> $GITHUB_ENV
 
+      - name: Debug Gradle errors (if first pass failed)
+        if: env.BUILD_FAILED == '1' || steps.build1.outcome == 'failure'
+        run: |
+          echo "=== Searching for Gradle errors ==="
+          GRADLE_LOG=".buildozer/android/platform/build-arm64-v8a/dists/signalis_trpg/build/outputs/logs"
+          if [ -d "$GRADLE_LOG" ]; then
+            ls -la "$GRADLE_LOG" || true
+            for f in "$GRADLE_LOG"/*.log; do
+              echo "--- $f ---"
+              tail -n 50 "$f" || true
+            done
+          fi
+          
+          echo "=== Checking for build reports ==="
+          REPORT=".buildozer/android/platform/build-arm64-v8a/dists/signalis_trpg/build/reports"
+          if [ -d "$REPORT" ]; then
+            ls -la "$REPORT" || true
+            find "$REPORT" -name "*.html" -o -name "*.txt" 2>/dev/null | head -10
+          fi
+          
+          echo "=== Checking gradle.properties ==="
+          GRADLE_PROPS=".buildozer/android/platform/build-arm64-v8a/dists/signalis_trpg/gradle.properties"
+          if [ -f "$GRADLE_PROPS" ]; then
+            cat "$GRADLE_PROPS"
+          fi
+
+      - name: Fix p4a recipe again (if first failed)
+        if: env.BUILD_FAILED == '1' || steps.build1.outcome == 'failure'
+        run: |
+          P4A_RECIPES=".buildozer/android/platform/python-for-android/pythonforandroid/recipes"
+          for recipe in hostpython3 python3; do
+            RECIPE_FILE="$P4A_RECIPES/$recipe/__init__.py"
+            if [ -f "$RECIPE_FILE" ]; then
+              sed -i 's/version = [\"'"'"'\"'][0-9]\+\.[0-9]\+\.[0-9]\+[\"'"'"'\"']/version = "3.11.9"/g' "$RECIPE_FILE"
+              sed -i 's/version = "[0-9]\+\.[0-9]\+\.[0-9]\+"/version = "3.11.9"/g' "$RECIPE_FILE"
+            fi
+          done
+
       - name: Build APK (second pass - with cached SDK)
-        timeout-minutes: 90
+        timeout-minutes: 120
         if: env.BUILD_FAILED == '1' || steps.build1.outcome == 'failure'
         run: |
           export JAVA_HOME=/usr/lib/jvm/default-java
           export PATH=$JAVA_HOME/bin:$PATH
           buildozer android debug 2>&1
+
+      - name: Final Gradle error capture
+        if: failure()
+        run: |
+          echo "=== FINAL BUILD FAILED ==="
+          echo "Searching for all gradle errors..."
+          grep -r "FAILURE" .buildozer/android/platform/build-*/dists/signalis_trpg/build/outputs/logs/ 2>/dev/null || true
+          grep -r "error" .buildozer/android/platform/build-*/dists/signalis_trpg/build/outputs/logs/ 2>/dev/null | tail -20 || true
 
       - name: Verify APK output
         run: |
@@ -64,11 +166,20 @@ jobs:
           ls -la bin/*.apk 2>/dev/null || echo "No APK found in bin/"
           find . -name "*.apk" -type f 2>/dev/null | head -5
 
+      - name: Save Buildozer cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: ${{ runner.os }}-buildozer-v0.0.6-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}-${{ github.run_id }}
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: signalis-trpg-android
+          name: signalis-trpg-v0.0.6
           path: bin/*.apk
           if-no-files-found: warn
 
@@ -76,19 +187,19 @@ jobs:
         if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
-          name: SIGNALIS TRPG v2.0.3 Android 15 Fix
+          tag_name: v0.0.6
+          name: SIGNALIS TRPG v0.0.6
           body: |
-            ## SIGNALIS TRPG 判定程序 APK
-            **修复内容**：
-            - 锁定 Python 3.11.9 版本（解决 Python 3.14 与 Kivy 2.3.0 不兼容问题）
-            - 修复 Android 15 闪退问题
-            - 修复中文显示问题（系统字体回退 + 显式字体设置）
-            - API 级别升级到 35（Android 15 原生适配）
+            ## SIGNALIS TRPG 判定程序 v0.0.6
+            **修复与优化**：
+            - 内置 NotoSansSC 中文字体（自动下载打包）
+            - 锁定 Python 3.11.9 / hostpython3 3.11.9
+            - 降级 Android API 33（NDK 25b 完全兼容，修复 Gradle 构建失败）
             - Kivy 2.3.0 稳定版本
-            - 启用 AndroidX 支持
-            - 优化权限模型
-            **适配范围**：Android 8.0 - Android 15
+            - 优化 GitHub Actions 缓存
+            - 全组件显式字体设置
+            - 修复 padding 兼容性问题
+            **适配范围**：Android 8.0 - Android 14
             **目标架构**：arm64-v8a
           files: bin/*.apk
           draft: false

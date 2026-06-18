@@ -2679,11 +2679,20 @@ class SignalisApp(App):
         global _CHINESE_FONT, _FONT_REGISTERED
         try:
             from kivy.core.text import LabelBase
-            CJK_FONTS = [
-                "/system/fonts/NotoSansCJK-Regular.ttc",
-                "/system/fonts/NotoSansCJKsc-Regular.ttc",
+            
+            # 1. 优先使用内置字体（打包到 APK 中）
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+            bundled_fonts = [
+                os.path.join(app_dir, 'fonts', 'NotoSansSC-Regular.otf'),
+                os.path.join(app_dir, 'fonts', 'NotoSansSC-Regular.ttf'),
+            ]
+            
+            # 2. 系统字体回退列表
+            system_fonts = [
                 "/system/fonts/NotoSansSC-Regular.ttf",
                 "/system/fonts/NotoSansSC-Bold.ttf",
+                "/system/fonts/NotoSansCJK-Regular.ttc",
+                "/system/fonts/NotoSansCJKsc-Regular.ttc",
                 "/system/fonts/MiSans.ttf",
                 "/system/fonts/MiSans-Regular.ttf",
                 "/system/fonts/MiSans-Medium.ttf",
@@ -2695,15 +2704,29 @@ class SignalisApp(App):
                 "/system/fonts/DroidSans.ttf",
                 "/system/fonts/Roboto-Regular.ttf",
             ]
-            for fpath in CJK_FONTS:
-                if os.path.exists(fpath):
-                    _CHINESE_FONT = fpath
+            
+            font_path = None
+            # 尝试内置字体
+            for fpath in bundled_fonts:
+                if fpath and os.path.exists(fpath):
+                    font_path = fpath
+                    print(f"[SIGNALIS] Using bundled font: {font_path}")
                     break
-            if _CHINESE_FONT:
+            
+            # 尝试系统字体
+            if not font_path:
+                for fpath in system_fonts:
+                    if os.path.exists(fpath):
+                        font_path = fpath
+                        print(f"[SIGNALIS] Using system font: {font_path}")
+                        break
+            
+            if font_path:
                 try:
-                    LabelBase.register('chinese', _CHINESE_FONT)
+                    LabelBase.register('chinese', font_path)
+                    _CHINESE_FONT = font_path
                     _FONT_REGISTERED = True
-                    print(f"[SIGNALIS] Font registered: {_CHINESE_FONT}")
+                    print(f"[SIGNALIS] Font registered: {font_path}")
                 except Exception as e2:
                     print(f"[SIGNALIS] Font register err: {e2}")
                     _FONT_REGISTERED = False
