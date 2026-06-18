@@ -1,0 +1,97 @@
+name: Build SIGNALIS TRPG APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev \
+            libltdl-dev git wget unzip default-jdk libstdc++6:i386 \
+            libgcc-s1:i386 zlib1g:i386
+
+      - name: Install buildozer and cython
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.37 pyjnius
+
+      - name: Clean old builds and cache
+        run: |
+          rm -rf bin/*.apk 2>/dev/null || true
+          rm -rf .buildozer/android/platform/build-* 2>/dev/null || true
+          rm -rf .buildozer/android/platform/python-for-android 2>/dev/null || true
+
+      - name: Build APK (first pass - may timeout for SDK download)
+        timeout-minutes: 90
+        continue-on-error: true
+        id: build1
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/default-java
+          export PATH=$JAVA_HOME/bin:$PATH
+          buildozer android debug 2>&1 || echo "BUILD_FAILED=1" >> $GITHUB_ENV
+
+      - name: Build APK (second pass - with cached SDK)
+        timeout-minutes: 90
+        if: env.BUILD_FAILED == '1' || steps.build1.outcome == 'failure'
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/default-java
+          export PATH=$JAVA_HOME/bin:$PATH
+          buildozer android debug 2>&1
+
+      - name: Verify APK output
+        run: |
+          echo "=== APK files ==="
+          ls -la bin/*.apk 2>/dev/null || echo "No APK found in bin/"
+          find . -name "*.apk" -type f 2>/dev/null | head -5
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: signalis-trpg-android
+          path: bin/*.apk
+          if-no-files-found: warn
+
+      - name: Create Release
+        if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: SIGNALIS TRPG v2.0.3 Android 15 Fix
+          body: |
+            ## SIGNALIS TRPG 判定程序 APK
+            **修复内容**：
+            - 锁定 Python 3.11.9 版本（解决 Python 3.14 与 Kivy 2.3.0 不兼容问题）
+            - 修复 Android 15 闪退问题
+            - 修复中文显示问题（系统字体回退 + 显式字体设置）
+            - API 级别升级到 35（Android 15 原生适配）
+            - Kivy 2.3.0 稳定版本
+            - 启用 AndroidX 支持
+            - 优化权限模型
+            **适配范围**：Android 8.0 - Android 15
+            **目标架构**：arm64-v8a
+          files: bin/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
