@@ -1,0 +1,3 @@
+# Fonts directory placeholder
+# This file ensures the fonts/ directory is tracked by git.
+# The actual font files are downloaded during CI build or bundled locally.
