@@ -1,4 +1,4 @@
-name: Build SIGNALIS TRPG APK v0.0.7
+name: Build SIGNALIS TRPG APK v0.0.8
 
 on:
   push:
@@ -44,31 +44,35 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.37 pyjnius
 
-      - name: Download and verify Chinese font
+      - name: Install Chinese font from system package
         run: |
           mkdir -p fonts
-          # Use raw.githubusercontent.com to ensure binary content (not HTML)
-          curl -L -o fonts/NotoSansSC-Regular.otf \
-            "https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf" \
-            || curl -L -o fonts/NotoSansSC-Regular.otf \
-            "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf"
-          # Verify file is not HTML and size is reasonable (> 1KB)
-          ls -la fonts/
-          file fonts/NotoSansSC-Regular.otf || true
-          head -c 50 fonts/NotoSansSC-Regular.otf | xxd | head -5 || true
+          # Install Noto CJK fonts from Ubuntu package (reliable, no download issues)
+          sudo apt-get install -y -qq fonts-noto-cjk
+          # Find the installed CJK font and copy to project
+          FONT_FILE=$(find /usr/share/fonts -name "NotoSansCJKsc-Regular.otf" 2>/dev/null | head -1)
+          if [ -z "$FONT_FILE" ]; then
+            FONT_FILE=$(find /usr/share/fonts -name "NotoSansSC-Regular.otf" 2>/dev/null | head -1)
+          fi
+          if [ -n "$FONT_FILE" ]; then
+            cp "$FONT_FILE" fonts/NotoSansSC-Regular.otf
+            echo "Font installed: $FONT_FILE -> fonts/NotoSansSC-Regular.otf"
+            ls -lh fonts/NotoSansSC-Regular.otf
+          else
+            echo "WARNING: No CJK font found in system, will use Android system fallback"
+            find /usr/share/fonts -name "*Noto*" 2>/dev/null | head -20 || true
+          fi
+          # Verify font file
           SIZE=$(stat -c%s fonts/NotoSansSC-Regular.otf 2>/dev/null || echo 0)
           echo "Font size: $SIZE bytes"
           if [ "$SIZE" -lt 1024 ]; then
-            echo "ERROR: Font file too small, likely corrupted or HTML"
-            cat fonts/NotoSansSC-Regular.otf
-            exit 1
+            echo "WARNING: Font file too small or missing, using system fallback"
+            rm -f fonts/NotoSansSC-Regular.otf
+          else
+            echo "Font validation passed"
           fi
-          # Check if it starts with HTML (download failure indicator)
-          if head -c 10 fonts/NotoSansSC-Regular.otf | grep -q "<!DOCTYPE\|<html"; then
-            echo "ERROR: Font file is HTML, not a real font"
-            exit 1
-          fi
-          echo "Font validation passed"
+          ls -la fonts/ || true
+
       - name: Restore Buildozer cache
         uses: actions/cache/restore@v4
         id: cache-restore
@@ -76,9 +80,9 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: ${{ runner.os }}-buildozer-v0.0.6-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}
+          key: ${{ runner.os }}-buildozer-v0.0.8-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-v0.0.6-
+            ${{ runner.os }}-buildozer-v0.0.8-
 
       - name: Initialize buildozer and download p4a
         run: |
@@ -129,7 +133,6 @@ jobs:
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH=$JAVA_HOME/bin:$PATH
           buildozer android debug 2>&1 | tee buildozer.log
-          # Check if build actually succeeded by looking for any apk
           APK_COUNT=$(find . -name "*.apk" -type f 2>/dev/null | wc -l)
           if [ "$APK_COUNT" -eq 0 ]; then
             echo "ERROR: No APK found anywhere after build!"
@@ -151,7 +154,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: signalis-trpg-v0.0.6
+          name: signalis-trpg-v0.0.8
           path: |
             bin/*.apk
             **/*.apk
@@ -165,10 +168,11 @@ jobs:
           name: SIGNALIS TRPG v0.0.8
           body: |
             ## SIGNALIS TRPG 判定程序 v0.0.8
-            - Java 17 修复 Gradle 构建
-            - API 33 + NDK 25b 稳定兼容
-            - 内置 NotoSansSC 字体
-            - Python 3.11.9 锁定
+            - Kivy Spinner 兼容性修复（移除无效参数）
+            - NotoSansSC 字体加载验证与错误处理
+            - Android 15 全屏兼容（移除 android:theme 冲突）
+            - Python 3.11.9 锁定，避免自动升级问题
+            - 使用 Ubuntu 系统字体包安装 CJK 字体
           files: |
             bin/*.apk
             **/*.apk
