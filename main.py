@@ -36,6 +36,7 @@ from kivy.core.window import Window
 from kivy.metrics import dp, sp
 from kivy.clock import Clock
 from kivy.factory import Factory
+from kivy.graphics import Color, Rectangle
 
 # =============================================================================
 # 2. 常量定义 (Constants) - Copied from original
@@ -1331,17 +1332,25 @@ INPUT_BG =          (0.18, 0.15, 0.14, 1)
 # 工具函数 (Utility functions)
 # ---------------------------------------------------------------------------
 def make_spinner(text: str, values: list, font_size=None, **kwargs):
-    """Create a themed Spinner widget."""
+    """Create a themed Spinner widget with canvas background for Android compatibility."""
     if font_size is None:
         font_size = sp(13)
-    return Spinner(
+    spinner = Spinner(
         text=text, values=values,
-        background_color=INPUT_BG,
         color=TEXT_COLOR,
         font_size=font_size,
         font_name=_font(),
+        background_normal='',
+        background_down='',
         **kwargs
     )
+    # Use canvas to draw background - avoids black box on Android
+    with spinner.canvas.before:
+        Color(*INPUT_BG)
+        spinner._bg_rect = Rectangle(pos=spinner.pos, size=spinner.size)
+    spinner.bind(pos=lambda obj, val: setattr(spinner._bg_rect, 'pos', val))
+    spinner.bind(size=lambda obj, val: setattr(spinner._bg_rect, 'size', val))
+    return spinner
 
 
 def _font():
@@ -1437,7 +1446,7 @@ class CharacterEditorPopup(Popup):
         main_layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
 
         # 滚动区域
-        scroll = ScrollView()
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         form = GridLayout(cols=2, spacing=dp(8), padding=dp(5), size_hint_y=None)
         form.bind(minimum_height=form.setter('height'))
 
@@ -1646,7 +1655,7 @@ class TemplateSelectorPopup(Popup):
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
 
-        scroll = ScrollView()
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         self.btn_container = BoxLayout(
             orientation="vertical", size_hint_y=None, spacing=dp(5)
         )
@@ -1692,7 +1701,7 @@ class EnemyTemplateSelectorPopup(Popup):
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
 
-        scroll = ScrollView()
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         self.btn_container = BoxLayout(
             orientation="vertical", size_hint_y=None, spacing=dp(5)
         )
@@ -1782,7 +1791,7 @@ class InfoPopup(Popup):
 
         layout = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(5))
 
-        scroll = ScrollView()
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         label = Label(
             text=message, font_size=sp(12), color=TEXT_COLOR,
             size_hint_y=None, markup=True,
@@ -1848,7 +1857,7 @@ class LeftPanel(BoxLayout):
         self.add_widget(make_label("--- 角色 ---", font_size=13, color=DIM_TEXT,
                                    size_hint_y=None, height=dp(22)))
 
-        char_scroll = ScrollView(size_hint=(1, 0.25))
+        char_scroll = ScrollView(size_hint=(1, 0.25), do_scroll_x=False, scroll_type=['content'])
         self.char_list = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(2))
         self.char_list.bind(minimum_height=self.char_list.setter('height'))
         char_scroll.add_widget(self.char_list)
@@ -1864,7 +1873,7 @@ class LeftPanel(BoxLayout):
         self.add_widget(make_label("--- 敌人 ---", font_size=13, color=DIM_TEXT,
                                    size_hint_y=None, height=dp(22)))
 
-        enemy_scroll = ScrollView(size_hint=(1, 0.25))
+        enemy_scroll = ScrollView(size_hint=(1, 0.25), do_scroll_x=False, scroll_type=['content'])
         self.enemy_list = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(2))
         self.enemy_list.bind(minimum_height=self.enemy_list.setter('height'))
         enemy_scroll.add_widget(self.enemy_list)
@@ -1879,7 +1888,7 @@ class LeftPanel(BoxLayout):
         self.add_widget(make_label("--- 详情 ---", font_size=13, color=DIM_TEXT,
                                    size_hint_y=None, height=dp(22)))
 
-        detail_scroll = ScrollView(size_hint=(1, 0.3))
+        detail_scroll = ScrollView(size_hint=(1, 0.3), do_scroll_x=False, scroll_type=['content'])
         self.detail_label = Label(
             text="选择一个角色查看详情", font_size=sp(11),
             color=TEXT_COLOR, size_hint_y=None, markup=True,
@@ -2094,9 +2103,12 @@ class CenterPanel(BoxLayout):
 
             # TabbedPanel
             print("[SIGNALIS] Building TabbedPanel...")
+            from kivy.utils import platform
+            is_android = platform == 'android' if hasattr(platform, '__call__') else False
+            tab_w = dp(90) if is_android else dp(70)
             self.tab_panel = TabbedPanel(
                 do_default_tab=False,
-                tab_width=dp(70),
+                tab_width=tab_w,
                 tab_height=dp(32),
                 background_color=PANEL_COLOR,
                 border=(0, 0, 0, 0)
@@ -2147,7 +2159,7 @@ class CenterPanel(BoxLayout):
         self.add_widget(make_label("判定结果", font_size=14, color=ACCENT_COLOR, bold=True,
                                    size_hint_y=None, height=dp(25)))
 
-        result_scroll = ScrollView(size_hint=(1, 0.35))
+        result_scroll = ScrollView(size_hint=(1, 0.35), do_scroll_x=False, scroll_type=['content'])
         self.result_label = Label(
             text="执行检定后结果将显示在这里", font_size=sp(12),
             color=TEXT_COLOR, size_hint_y=None, markup=True,
@@ -2164,7 +2176,7 @@ class CenterPanel(BoxLayout):
         tab.font_name = _font()
         content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
 
-        grid = GridLayout(cols=2, spacing=dp(8), size_hint_y=None, height=dp(200))
+        grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(320))
         grid.add_widget(make_label("属性:", font_size=13))
         self.basic_attr = make_spinner(ATTR_DISPLAY_MAP["agi"], ATTR_DISPLAY_NAMES,
                                         size_hint_y=None, height=dp(40))
@@ -2204,9 +2216,9 @@ class CenterPanel(BoxLayout):
         content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
 
         # 攻击方
-        atk_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(110))
+        atk_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(150))
         atk_box.add_widget(make_label("--- 攻击方 ---", font_size=12, color=ACCENT_COLOR))
-        grid1 = GridLayout(cols=2, spacing=dp(5), size_hint_y=None, height=dp(90))
+        grid1 = GridLayout(cols=1, spacing=dp(5), size_hint_y=None, height=dp(120))
         grid1.add_widget(make_label("属性:", font_size=12))
         self.opposed_attr1 = make_spinner(ATTR_DISPLAY_MAP["agi"], ATTR_DISPLAY_NAMES,
                                            size_hint_y=None, height=dp(36))
@@ -2219,9 +2231,9 @@ class CenterPanel(BoxLayout):
         content.add_widget(atk_box)
 
         # 防御方
-        def_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(110))
+        def_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(150))
         def_box.add_widget(make_label("--- 防御方 ---", font_size=12, color=ACCENT_COLOR))
-        grid2 = GridLayout(cols=2, spacing=dp(5), size_hint_y=None, height=dp(90))
+        grid2 = GridLayout(cols=1, spacing=dp(5), size_hint_y=None, height=dp(120))
         grid2.add_widget(make_label("属性:", font_size=12))
         self.opposed_attr2 = make_spinner(ATTR_DISPLAY_MAP["agi"], ATTR_DISPLAY_NAMES,
                                            size_hint_y=None, height=dp(36))
@@ -2246,7 +2258,7 @@ class CenterPanel(BoxLayout):
         tab.font_name = _font()
         content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
 
-        grid = GridLayout(cols=2, spacing=dp(8), size_hint_y=None, height=dp(170))
+        grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(240))
         grid.add_widget(make_label("武器:", font_size=13))
         self.combat_weapon = make_spinner(WEAPON_DISPLAY_MAP["rifle"], WEAPON_DISPLAY_NAMES,
                                            size_hint_y=None, height=dp(40))
@@ -2276,7 +2288,7 @@ class CenterPanel(BoxLayout):
         tab.font_name = _font()
         content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
 
-        grid = GridLayout(cols=2, spacing=dp(8), size_hint_y=None, height=dp(100))
+        grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(140))
         grid.add_widget(make_label("恐怖等级:", font_size=13))
         self.horror_level = make_spinner(HORROR_DISPLAY_MAP["fear"], HORROR_DISPLAY_NAMES,
                                           size_hint_y=None, height=dp(40))
@@ -2298,7 +2310,7 @@ class CenterPanel(BoxLayout):
         tab.font_name = _font()
         content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
 
-        grid = GridLayout(cols=2, spacing=dp(8), size_hint_y=None, height=dp(130))
+        grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(180))
         grid.add_widget(make_label("能力:", font_size=13))
         self.res_ability = make_spinner(RESONANCE_DISPLAY_NAMES[0], RESONANCE_DISPLAY_NAMES,
                                          size_hint_y=None, height=dp(40))
@@ -2562,7 +2574,7 @@ class RightPanel(BoxLayout):
         self.add_widget(make_label("判定日志 v2", font_size=18, color=ACCENT_COLOR, bold=True,
                                    size_hint_y=None, height=dp(35)))
 
-        log_scroll = ScrollView()
+        log_scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
         self.log_label = Label(
             text="暂无判定记录", font_size=sp(11),
             color=TEXT_COLOR, size_hint_y=None, markup=True,
@@ -2618,7 +2630,7 @@ class RightPanel(BoxLayout):
 # 主布局 (Main Layout)
 # ---------------------------------------------------------------------------
 class MainLayout(BoxLayout):
-    """主布局 - 三栏横屏布局"""
+    """主布局 - 响应式三栏/单栏布局"""
 
     def __init__(self, app, **kwargs):
         import traceback
@@ -2626,41 +2638,74 @@ class MainLayout(BoxLayout):
         try:
             super().__init__(**kwargs)
             self.app = app
-            self.orientation = "horizontal"
-            self.spacing = dp(3)
 
-            # Android 系统导航栏适配：底部留出安全区
-            try:
-                from kivy.utils import platform
-                if platform == "android":
-                    self.padding = dp(4)  # 统一padding，避免列表在某些Kivy版本中出问题
-                    print("[SIGNALIS] Android padding set")
-                else:
+            # 检测屏幕方向，手机纵向时改为垂直堆叠
+            from kivy.core.window import Window
+            from kivy.utils import platform
+            is_android = platform == 'android' if hasattr(platform, '__call__') else False
+            is_portrait = Window.height > Window.width
+
+            if is_android and is_portrait:
+                # 手机纵向：垂直堆叠，每栏可滚动
+                self.orientation = "vertical"
+                self.spacing = dp(4)
+                self.padding = dp(4)
+                # 左栏 (角色管理) - 可滚动
+                print("[SIGNALIS] Portrait mode: vertical stack")
+                left_scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+                self.left_panel = LeftPanel(app, size_hint=(1, None))
+                self.left_panel.bind(minimum_height=self.left_panel.setter('height'))
+                left_scroll.add_widget(self.left_panel)
+                self.add_widget(left_scroll)
+                # 中栏 (判定面板) - 可滚动
+                center_scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+                self.center_panel = CenterPanel(app, size_hint=(1, None))
+                self.center_panel.bind(minimum_height=self.center_panel.setter('height'))
+                center_scroll.add_widget(self.center_panel)
+                self.add_widget(center_scroll)
+                # 右栏 (日志面板) - 固定高度
+                self.right_panel = RightPanel(app, size_hint=(1, 0.25))
+                self.add_widget(self.right_panel)
+            else:
+                # 横屏/平板：横向三栏
+                self.orientation = "horizontal"
+                self.spacing = dp(3)
+                try:
+                    if is_android:
+                        self.padding = dp(4)
+                        print("[SIGNALIS] Android padding set")
+                    else:
+                        self.padding = dp(3)
+                except Exception:
                     self.padding = dp(3)
-            except Exception:
-                self.padding = dp(3)
-
-            # 左栏 - 角色管理 (25%)
-            print("[SIGNALIS] Building LeftPanel...")
-            self.left_panel = LeftPanel(app, size_hint=(0.25, 1))
-            self.add_widget(self.left_panel)
-            print("[SIGNALIS] LeftPanel added")
-
-            # 中栏 - 判定面板 (50%)
-            print("[SIGNALIS] Building CenterPanel...")
-            self.center_panel = CenterPanel(app, size_hint=(0.50, 1))
-            self.add_widget(self.center_panel)
-            print("[SIGNALIS] CenterPanel added")
-
-            # 右栏 - 日志面板 (25%)
-            print("[SIGNALIS] Building RightPanel...")
-            self.right_panel = RightPanel(app, size_hint=(0.25, 1))
-            self.add_widget(self.right_panel)
-            print("[SIGNALIS] RightPanel added")
+                # 左栏 - 角色管理 (25%)
+                print("[SIGNALIS] Building LeftPanel...")
+                self.left_panel = LeftPanel(app, size_hint=(0.25, 1))
+                self.add_widget(self.left_panel)
+                print("[SIGNALIS] LeftPanel added")
+                # 中栏 - 判定面板 (50%)
+                print("[SIGNALIS] Building CenterPanel...")
+                self.center_panel = CenterPanel(app, size_hint=(0.50, 1))
+                self.add_widget(self.center_panel)
+                print("[SIGNALIS] CenterPanel added")
+                # 右栏 - 日志面板 (25%)
+                print("[SIGNALIS] Building RightPanel...")
+                self.right_panel = RightPanel(app, size_hint=(0.25, 1))
+                self.add_widget(self.right_panel)
+                print("[SIGNALIS] RightPanel added")
         except Exception as e:
             print(f"[SIGNALIS] CRASH in MainLayout.__init__: {e}")
             print(f"[SIGNALIS] TRACEBACK: {traceback.format_exc()}")
             raise
+
+    def on_size(self, *args):
+        """屏幕旋转时重新调整布局"""
+        from kivy.core.window import Window
+        is_portrait = Window.height > Window.width
+        if is_portrait and self.orientation != 'vertical':
+            self.orientation = 'vertical'
+        elif not is_portrait and self.orientation != 'horizontal':
+            self.orientation = 'horizontal'
 
 
 # ---------------------------------------------------------------------------
@@ -2673,6 +2718,14 @@ class SignalisApp(App):
         import traceback
         import os
         print("[SIGNALIS] build() started")
+
+        # ===== 禁用 Android 多指触摸，确保单指滑动正常工作 =====
+        try:
+            from kivy.config import Config
+            Config.set('input', 'mouse', 'mouse,disable_multitouch_on_android')
+            print("[SIGNALIS] Multitouch disabled for Android")
+        except Exception as e:
+            print(f"[SIGNALIS] Config set err: {e}")
 
         # ===== 加载中文字体 =====
         global _CHINESE_FONT, _FONT_REGISTERED
