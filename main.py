@@ -2174,7 +2174,8 @@ class CenterPanel(BoxLayout):
         """基础检定Tab"""
         tab = TabbedPanelHeader(text="基础检定")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(320))
         grid.add_widget(make_label("属性:", font_size=13))
@@ -2206,14 +2207,17 @@ class CenterPanel(BoxLayout):
                                         size_hint_y=None, height=dp(48), font_size=sp(14)))
         content.add_widget(Label())  # spacer
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     def _build_opposed_tab(self):
         """对抗检定Tab"""
         tab = TabbedPanelHeader(text="对抗检定")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         # 攻击方
         atk_box = BoxLayout(orientation="vertical", size_hint_y=None, height=dp(150))
@@ -2249,14 +2253,17 @@ class CenterPanel(BoxLayout):
                                         size_hint_y=None, height=dp(48), font_size=sp(14)))
         content.add_widget(Label())
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     def _build_combat_tab(self):
         """战斗判定Tab"""
         tab = TabbedPanelHeader(text="战斗判定")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(240))
         grid.add_widget(make_label("武器:", font_size=13))
@@ -2279,14 +2286,17 @@ class CenterPanel(BoxLayout):
                                         size_hint_y=None, height=dp(48), font_size=sp(16)))
         content.add_widget(Label())
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     def _build_horror_tab(self):
         """恐怖检定Tab"""
         tab = TabbedPanelHeader(text="恐怖检定")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(140))
         grid.add_widget(make_label("恐怖等级:", font_size=13))
@@ -2301,14 +2311,17 @@ class CenterPanel(BoxLayout):
                                         size_hint_y=None, height=dp(48), font_size=sp(14)))
         content.add_widget(Label())
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     def _build_resonance_tab(self):
         """生物共振Tab"""
         tab = TabbedPanelHeader(text="生物共振")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         grid = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, height=dp(180))
         grid.add_widget(make_label("能力:", font_size=13))
@@ -2328,14 +2341,17 @@ class CenterPanel(BoxLayout):
         content.add_widget(btn_box)
         content.add_widget(Label())
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     def _build_pcd_tab(self):
         """PCD操作Tab"""
         tab = TabbedPanelHeader(text="PCD操作")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         content.add_widget(make_label("PCD (人格模型校正数据) - 仅仿形体",
                                        font_size=14, color=ACCENT_COLOR, bold=True))
@@ -2349,14 +2365,17 @@ class CenterPanel(BoxLayout):
         content.add_widget(btn_box)
         content.add_widget(Label())
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     def _build_intimacy_tab(self):
         """贴贴机制Tab"""
         tab = TabbedPanelHeader(text="贴贴机制")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         content.add_widget(make_label("队友亲密交互 - 压力恢复",
                                        font_size=14, color=ACCENT_COLOR, bold=True))
@@ -2370,14 +2389,17 @@ class CenterPanel(BoxLayout):
         content.add_widget(btn_box)
         content.add_widget(Label())
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     def _build_heal_tab(self):
         """恢复/治疗Tab"""
         tab = TabbedPanelHeader(text="恢复/治疗")
         tab.font_name = _font()
-        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
+        content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8), size_hint_y=None)
+        content.bind(minimum_height=content.setter('height'))
 
         content.add_widget(make_label("v2恢复规则:", font_size=14, color=ACCENT_COLOR, bold=True))
         content.add_widget(make_label(
@@ -2391,7 +2413,9 @@ class CenterPanel(BoxLayout):
         content.add_widget(btn_box)
         content.add_widget(Label())
 
-        tab.content = content
+        scroll = ScrollView(do_scroll_x=False, scroll_type=['content'])
+        scroll.add_widget(content)
+        tab.content = scroll
         return tab
 
     # --- 判定方法 ---
