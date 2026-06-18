@@ -16,7 +16,7 @@ source.dir = .
 source.include_exts = py,kv,json,png,jpg,otf,ttf,xml
 
 # (str) Application versioning
-version = 0.0.6
+version = 0.0.7
 
 # (list) Source directories to include
 source.include_dirs = fonts
@@ -30,24 +30,25 @@ requirements = hostpython3==3.11.9,python3==3.11.9,kivy==2.3.0,pygments,sdl2,sdl
 orientation = landscape
 
 # (bool) Indicate if the application should be fullscreen or not
-# 0 = windowed mode, better compatibility with Android 15
-fullscreen = 0
+# 1 = fullscreen mode, stable for Android 15 / HyperOS
+fullscreen = 1
 
 # Presplash background color during loading
 android.presplash_color = #FF1a1a2e
 
 #
-# Android specific - Optimized for Android 15
+# Android specific
 #
 
-# (list) Permissions - minimal set for Android 15
-android.permissions = INTERNET
+# (list) Permissions - full set for Android 15 compatibility
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, VIBRATE
 
 # (int) Target Android API - API 33 for NDK 25b stable compatibility
 android.api = 33
 
 # (int) Minimum API your APK will support.
-android.minapi = 21
+# Raised to 28 for Android 15 compatibility
+android.minapi = 28
 
 # (str) Android NDK version to use
 android.ndk = 25b
@@ -60,9 +61,6 @@ android.enable_androidx = True
 
 # (str) launchMode to set for the main activity
 android.manifest.launch_mode = singleTask
-
-# (str) Extra xml to write directly inside the <manifest> element
-# Add explicit SDK target for Android 13+ compatibility
 
 # (list) The Android archs to build for
 android.archs = arm64-v8a
