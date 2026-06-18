@@ -1,4 +1,4 @@
-name: Build SIGNALIS TRPG APK v0.0.6
+name: Build SIGNALIS TRPG APK v0.0.7
 
 on:
   push:
@@ -98,138 +98,71 @@ jobs:
       - name: THOROUGH clean - remove ALL old dists and builds
         run: |
           echo "=== THOROUGH CLEAN ==="
-          # Remove all dist directories to force rebuild
           for dist_dir in .buildozer/android/platform/build-*/dists/*/; do
             if [ -d "$dist_dir" ]; then
               echo "Removing cached dist: $dist_dir"
               rm -rf "$dist_dir"
             fi
           done
-          # Remove all build directories
           for build_dir in .buildozer/android/platform/build-*/build/; do
             if [ -d "$build_dir" ]; then
               echo "Removing build dir: $build_dir"
               rm -rf "$build_dir"
             fi
           done
-          # Remove app staging
           rm -rf .buildozer/android/app 2>/dev/null || true
-          # Remove old APKs
           rm -rf bin/*.apk 2>/dev/null || true
-          echo "Clean complete. Listing remaining dists:"
-          find .buildozer -name "dists" -type d 2>/dev/null | while read d; do
-            ls -la "$d" 2>/dev/null || true
-          done
+          echo "Clean complete."
 
-      - name: Fix AndroidManifest.xml (remove duplicate uses-feature if exists)
-        run: |
-          MANIFEST=".buildozer/android/platform/build-arm64-v8a/dists/signalis_trpg/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST" ]; then
-            echo "Before fix:"
-            grep -n "uses-feature" "$MANIFEST" || true
-            sed -i '/android:glEsVersion/d' "$MANIFEST"
-            echo "After fix:"
-            grep -n "uses-feature" "$MANIFEST" || true
-          fi
-
-      - name: Build APK (first pass) with full logging
+      - name: Build APK with strict error checking
         timeout-minutes: 120
-        continue-on-error: true
-        id: build1
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export PATH=$JAVA_HOME/bin:$PATH
-          buildozer android debug -v 2>&1 | tee buildozer_full.log || echo "BUILD_FAILED=1" >> $GITHUB_ENV
-
-      - name: Dump build logs if first pass failed
-        if: env.BUILD_FAILED == '1' || steps.build1.outcome == 'failure'
-        run: |
-          echo "=== FIRST PASS FAILED - DUMPING LOGS ==="
-          if [ -f "buildozer_full.log" ]; then
-            echo "--- Last 200 lines of buildozer_full.log ---"
-            tail -n 200 buildozer_full.log
+          buildozer android debug 2>&1 | tee buildozer.log
+          # Check if build actually succeeded by looking for any apk
+          APK_COUNT=$(find . -name "*.apk" -type f 2>/dev/null | wc -l)
+          if [ "$APK_COUNT" -eq 0 ]; then
+            echo "ERROR: No APK found anywhere after build!"
+            echo "=== Buildozer last 100 lines ==="
+            tail -n 100 buildozer.log
+            exit 1
           fi
-          echo "--- Searching for ERROR in buildozer ---"
-          grep -n "ERROR\|Error\|error\|FAILURE\|FAILED\|Exception\|Traceback" buildozer_full.log 2>/dev/null | tail -30 || true
-          echo "--- Gradle logs ---"
-          find .buildozer -name "*.log" -path "*/outputs/*" 2>/dev/null | head -3 | while read f; do
-            echo "--- $f ---"
-            tail -n 50 "$f" || true
-          done
-          echo "--- Gradle reports ---"
-          find .buildozer -name "problems-report.html" 2>/dev/null | head -1 | while read f; do
-            echo "Report: $f"
-            cat "$f" 2>/dev/null | head -50 || true
-          done
-
-      - name: Fix p4a again (if first failed)
-        if: env.BUILD_FAILED == '1' || steps.build1.outcome == 'failure'
-        run: |
-          P4A=".buildozer/android/platform/python-for-android/pythonforandroid/recipes"
-          for r in hostpython3 python3; do
-            f="$P4A/$r/__init__.py"
-            [ -f "$f" ] && sed -i 's/version = "[0-9]\+\.[0-9]\+\.[0-9]\+"/version = "3.11.9"/g' "$f"
-          done
-
-      - name: Build APK (second pass)
-        timeout-minutes: 120
-        if: env.BUILD_FAILED == '1' || steps.build1.outcome == 'failure'
-        run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export PATH=$JAVA_HOME/bin:$PATH
-          buildozer android debug -v 2>&1 | tee buildozer_full2.log
-
-      - name: Final log dump if completely failed
-        if: failure()
-        run: |
-          echo "=== COMPLETE BUILD FAILURE - ALL LOGS ==="
-          for log in buildozer_full.log buildozer_full2.log; do
-            if [ -f "$log" ]; then
-              echo "--- $log (last 100 lines) ---"
-              tail -n 100 "$log" || true
-            fi
-          done
-          echo "--- All gradle errors ---"
-          find .buildozer -name "*.log" 2>/dev/null | while read f; do
-            grep -H "FAILURE\|error\|ERROR" "$f" 2>/dev/null | tail -5 || true
-          done
+          echo "Found $APK_COUNT APK file(s):"
+          find . -name "*.apk" -type f 2>/dev/null
 
       - name: Verify APK output
         run: |
-          echo "=== APK files ==="
+          echo "=== APK files in bin/ ==="
           ls -la bin/*.apk 2>/dev/null || echo "No APK in bin/"
-          find . -name "*.apk" -type f 2>/dev/null | head -5
-
-      - name: Save Buildozer cache
-        uses: actions/cache/save@v4
-        if: always()
-        with:
-          path: |
-            ~/.buildozer
-            .buildozer
-          key: ${{ runner.os }}-buildozer-v0.0.6-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}-${{ github.run_id }}
+          echo "=== All APK files ==="
+          find . -name "*.apk" -type f 2>/dev/null
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: signalis-trpg-v0.0.6
-          path: bin/*.apk
+          path: |
+            bin/*.apk
+            **/*.apk
           if-no-files-found: warn
 
       - name: Create Release
         if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.0.6
-          name: SIGNALIS TRPG v0.0.6
+          tag_name: v0.0.7
+          name: SIGNALIS TRPG v0.0.7
           body: |
             ## SIGNALIS TRPG 判定程序 v0.0.6
             - Java 17 修复 Gradle 构建
             - API 33 + NDK 25b 稳定兼容
             - 内置 NotoSansSC 字体
             - Python 3.11.9 锁定
-          files: bin/*.apk
+          files: |
+            bin/*.apk
+            **/*.apk
           draft: false
           prerelease: false
         env:
