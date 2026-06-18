@@ -16,7 +16,10 @@ source.dir = .
 source.include_exts = py,kv,json,png,jpg,otf,ttf,xml
 
 # (str) Application versioning
-version = 2.0.3
+version = 0.0.6
+
+# (list) Source directories to include
+source.include_dirs = fonts
 
 # (list) Application requirements
 # Kivy 2.3.0 for Android 15 compatibility
@@ -40,14 +43,11 @@ android.presplash_color = #FF1a1a2e
 # (list) Permissions - minimal set for Android 15
 android.permissions = INTERNET
 
-# (int) Target Android API - API 35 for Android 15 full compatibility
-android.api = 35
+# (int) Target Android API - API 33 for NDK 25b stable compatibility
+android.api = 33
 
 # (int) Minimum API your APK will support.
 android.minapi = 21
-
-# (int) Android SDK version to use
-android.sdk = 35
 
 # (str) Android NDK version to use
 android.ndk = 25b
@@ -62,7 +62,7 @@ android.enable_androidx = True
 android.manifest.launch_mode = singleTask
 
 # (str) Extra xml to write directly inside the <manifest> element
-# Add explicit SDK target for Android 15 compatibility
+# Add explicit SDK target for Android 13+ compatibility
 android.extra_manifest_xml = ./extra_manifest.xml
 
 # (list) The Android archs to build for
