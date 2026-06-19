@@ -2818,17 +2818,24 @@ class BasePopup(Popup):
         Clock.schedule_once(self._fix_layout, 0.1)
 
     def _fix_layout(self, dt):
-        """遍历所有子组件，强制设置 minimum_height 绑定失效的布局高度"""
-        for widget in self.walk(restrict=True):
-            if isinstance(widget, ScrollView):
-                for child in widget.children:
-                    if hasattr(child, 'minimum_height') and child.size_hint_y is None:
-                        child.height = child.minimum_height
-                    if hasattr(child, 'do_layout'):
-                        child.do_layout()
-                widget.do_layout()
-        if self.content and hasattr(self.content, 'do_layout'):
-            self.content.do_layout()
+        """遍历所有子组件，强制设置 minimum_height 绑定失效的布局高度
+        使用 try/except 保护，避免 Android 上递归或除零导致闪退"""
+        try:
+            for widget in self.walk(restrict=True):
+                if isinstance(widget, ScrollView):
+                    for child in widget.children:
+                        if hasattr(child, 'minimum_height') and child.size_hint_y is None:
+                            mh = child.minimum_height
+                            if mh > 0:
+                                child.height = mh
+                        if hasattr(child, 'do_layout') and child.__class__.__name__ in ('GridLayout', 'BoxLayout'):
+                            child.do_layout()
+            if self.content and hasattr(self.content, 'do_layout') and self.content.__class__.__name__ in ('GridLayout', 'BoxLayout'):
+                self.content.do_layout()
+        except Exception as e:
+            import traceback
+            print(f"[BasePopup] _fix_layout error: {e}")
+            print(traceback.format_exc())
 
 class ConfirmPopup(BasePopup):
 
