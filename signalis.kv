@@ -181,3 +181,18 @@
 # =============================================================================
 # Note: Animations can be added programmatically in main.py
 # Example fade-in effect for result display could be implemented there.
+
+# SpinnerOption styling - fixes Chinese text display in dropdown
+<SpinnerOption>:
+    font_name: 'chinese'
+    font_size: '12sp'
+    color: 0.9, 0.88, 0.85, 1
+    background_color: 0.18, 0.15, 0.14, 1
+    background_normal: ''
+    background_down: ''
+    canvas.before:
+        Color:
+            rgba: 0.18, 0.15, 0.14, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size

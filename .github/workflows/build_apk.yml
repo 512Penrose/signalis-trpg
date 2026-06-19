@@ -1,4 +1,4 @@
-name: Build SIGNALIS TRPG APK v0.0.9
+name: Build SIGNALIS TRPG APK v0.0.10
 
 on:
   push:
@@ -76,9 +76,9 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: ${{ runner.os }}-buildozer-v0.0.9-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}
+          key: ${{ runner.os }}-buildozer-v0.0.10-${{ hashFiles('buildozer.spec') }}-${{ hashFiles('.github/workflows/build_apk.yml') }}
           restore-keys: |
-            ${{ runner.os }}-buildozer-v0.0.9-
+            ${{ runner.os }}-buildozer-v0.0.10-
 
       - name: Initialize buildozer and download p4a
         run: |
@@ -150,7 +150,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: signalis-trpg-v0.0.9
+          name: signalis-trpg-v0.0.10
           path: |
             bin/*.apk
             **/*.apk
@@ -163,14 +163,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         with:
-          tag_name: v0.0.9
-          name: SIGNALIS TRPG v0.0.9
+          tag_name: v0.0.10
+          name: SIGNALIS TRPG v0.0.10
           body: |
-            ## SIGNALIS TRPG 判定程序 v0.0.9
+            ## SIGNALIS TRPG 判定程序 v0.0.10
             ### Bug 修复
-            - **修复 Popup 黑屏问题**：移除所有 Popup 的 `background = ''` 设置，改为保留默认背景 + `background_color` 调制；为每个 Popup 的 content 添加 `canvas.before` 背景绘制，确保 Android 上正确渲染
-            - **修复汉字显示不全**：`build_apk.yml` 字体查找支持 `.ttc`（TrueType Collection），`buildozer.spec` 添加 `ttc` 到 `source.include_exts`；`main.py` 内置字体回退列表增加 `.ttc` 优先，避免回退到不完整的系统字体
-            - 保留 v0.0.8 所有修复：Spinner 黑框修复、Tab 可滚动、响应式布局、单列表单、Android 15 兼容、Python 3.11.9 锁定
+            - **修复显示错位**：移除 `MainLayout.on_size()` 中多余的屏幕方向切换逻辑，避免横屏模式下布局重计算导致的显示错位
+            - **修复中文显示不全**：在 `signalis.kv` 中添加 `<SpinnerOption>` 样式规则，确保 Spinner 下拉选项继承 `chinese` 字体，解决属性、武器、防具选择时中文显示不全问题
+            - **修复无法滑动**：移除所有 `ScrollView` 构造函数中显式传入的 `scroll_type=['content']`，让 ScrollView 继承 KV 文件中默认的 `['bars', 'content']`，恢复滚动条和触摸滑动功能
+            - 保留 v0.0.9 所有修复：Popup 黑屏修复、汉字显示优化、Spinner 黑框修复、Tab 可滚动、响应式布局、单列表单、Android 15 兼容、Python 3.11.9 锁定
           files: |
             bin/*.apk
             **/*.apk
