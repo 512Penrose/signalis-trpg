@@ -2804,7 +2804,33 @@ def add_panel_bg(widget, color=PANEL_COLOR):
 
 # ---------------------------------------------------------------------------
 
-class ConfirmPopup(Popup):
+
+# ---------------------------------------------------------------------------
+# BasePopup - 修复 Android 上 Popup 内容空白问题
+# ---------------------------------------------------------------------------
+
+class BasePopup(Popup):
+    """Popup 基类，自动修复 Android 上 ScrollView 内容高度为 0 导致的空白问题"""
+
+    def on_open(self):
+        """Popup 打开时强制刷新所有 ScrollView 内部布局"""
+        from kivy.clock import Clock
+        Clock.schedule_once(self._fix_layout, 0.1)
+
+    def _fix_layout(self, dt):
+        """遍历所有子组件，强制设置 minimum_height 绑定失效的布局高度"""
+        for widget in self.walk(restrict=True):
+            if isinstance(widget, ScrollView):
+                for child in widget.children:
+                    if hasattr(child, 'minimum_height') and child.size_hint_y is None:
+                        child.height = child.minimum_height
+                    if hasattr(child, 'do_layout'):
+                        child.do_layout()
+                widget.do_layout()
+        if self.content and hasattr(self.content, 'do_layout'):
+            self.content.do_layout()
+
+class ConfirmPopup(BasePopup):
 
     """通用确认对话框"""
 
@@ -2871,7 +2897,7 @@ class ConfirmPopup(Popup):
 
 # ---------------------------------------------------------------------------
 
-class CharacterEditorPopup(Popup):
+class CharacterEditorPopup(BasePopup):
 
     """角色创建/编辑弹窗"""
 
@@ -3300,7 +3326,7 @@ class CharacterEditorPopup(Popup):
 
 # ---------------------------------------------------------------------------
 
-class TemplateSelectorPopup(Popup):
+class TemplateSelectorPopup(BasePopup):
 
     """角色模板选择弹窗"""
 
@@ -3395,7 +3421,7 @@ class TemplateSelectorPopup(Popup):
 
 # ---------------------------------------------------------------------------
 
-class EnemyTemplateSelectorPopup(Popup):
+class EnemyTemplateSelectorPopup(BasePopup):
 
     """敌人模板选择弹窗"""
 
@@ -3490,7 +3516,7 @@ class EnemyTemplateSelectorPopup(Popup):
 
 # ---------------------------------------------------------------------------
 
-class HumanHealPopup(Popup):
+class HumanHealPopup(BasePopup):
 
     """人类恢复 - 输入共振能量"""
 
@@ -3583,7 +3609,7 @@ class HumanHealPopup(Popup):
 
 # ---------------------------------------------------------------------------
 
-class InfoPopup(Popup):
+class InfoPopup(BasePopup):
 
     """通用信息弹窗"""
 
