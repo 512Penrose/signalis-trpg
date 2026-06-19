@@ -16,7 +16,7 @@ source.dir = .
 source.include_exts = py,kv,json,png,jpg,otf,ttf,ttc,xml
 
 # (str) Application versioning
-version = 0.0.10
+version = 0.0.11
 
 # (list) Source directories to include
 source.include_dirs = fonts
