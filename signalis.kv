@@ -15,17 +15,26 @@
     background_color: 0.12, 0.10, 0.10, 1
     border: [0, 0, 0, 0]
     do_default_tab: False
+    canvas.before:
+        Color:
+            rgba: 0.12, 0.10, 0.10, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
 <TabbedPanelHeader>:
     background_color: 0.18, 0.15, 0.14, 1
     color: 0.9, 0.88, 0.85, 1
     bold: True
     font_size: '12sp'
-
-<TabbedPanelHeader>:
-    # Selected tab highlight
     background_down: ''
     background_normal: ''
+    canvas.before:
+        Color:
+            rgba: self.background_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
 <TabbedPanelContent>:
     canvas.before:
@@ -66,21 +75,26 @@
     padding: [8, 8]
     multiline: False
 
-# Popup styling
+# Popup styling - Android fix: background must be empty string + canvas.before
 <Popup>:
     background_color: 0.12, 0.10, 0.10, 1
+    background: ''
     title_color: 0.72, 0.45, 0.20, 1
     title_size: '16sp'
     title_align: 'center'
     separator_color: 0.72, 0.45, 0.20, 1
     border: [8, 8, 8, 8]
+    canvas.before:
+        Color:
+            rgba: 0.12, 0.10, 0.10, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-# ScrollView styling - ensure proper scrolling
+# ScrollView styling - Android fix: disable bars, use content-only scrolling for smoothness
 <ScrollView>:
-    bar_width: '6dp'
-    bar_color: 0.72, 0.45, 0.20, 0.6
-    bar_inactive_color: 0.40, 0.35, 0.32, 0.3
-    scroll_type: ['bars', 'content']
+    bar_width: 0
+    scroll_type: ['content']
 
 # Label base styling
 <Label>:
@@ -90,7 +104,7 @@
     halign: 'left'
     valign: 'middle'
 
-# BoxLayout panels
+# BoxLayout panels - transparent background to avoid conflicts with add_panel_bg
 <BoxLayout>:
     canvas.before:
         Color:
